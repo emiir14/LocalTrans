@@ -1,0 +1,10 @@
+{
+  "name": "Escriba - Transcripción Odontológica Local",
+  "description": "Grabación y transcripción de consultas odontológicas 100% en tu dispositivo. Privacidad absoluta sin enviar audio ni texto a la nube.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
