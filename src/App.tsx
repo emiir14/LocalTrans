@@ -16,7 +16,7 @@ import { TopBar } from './components/TopBar';
 import { useAppStore } from './store/useAppStore';
 
 export default function App() {
-  const { currentView, setView, init } = useAppStore();
+  const { currentView, setView, init, isRecording, transcribingSessionId } = useAppStore();
 
   useEffect(() => {
     init();
@@ -27,6 +27,23 @@ export default function App() {
       setView('benchmark');
     }
   }, [init, setView]);
+
+  // Prevent accidental tab closure or refresh during recording or transcription
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isRecording || transcribingSessionId) {
+        e.preventDefault();
+        // Standard trigger for modern browsers to display leave confirmation dialog
+        e.returnValue = '';
+        return '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isRecording, transcribingSessionId]);
 
   return (
     <div className="min-h-full flex flex-col bg-[#FAFAF8] text-slate-800 dark:bg-slate-950 dark:text-slate-100 transition-colors">

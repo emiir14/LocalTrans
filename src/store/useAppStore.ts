@@ -131,6 +131,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     // Apply theme
     applyThemeClass(sets.theme);
 
+    // Recover any session that was interrupted during transcription (e.g. browser reload/crash)
+    const allUserSessions = await sessionRepo.getAll(ws.id);
+    const interruptedSession = allUserSessions.find((s) => s.status === 'transcribing');
+    if (interruptedSession) {
+      await sessionRepo.update(interruptedSession.id, { status: 'recorded' });
+    }
+
     set({
       workspace: ws,
       profile: prof,
@@ -387,9 +394,23 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
 
     try {
-      const segments = await pipeline.run(sessionId, ws.id, (prog) => {
-        set({ transcriptionProgress: prog });
-      });
+      const segments = await pipeline.run(
+        sessionId,
+        ws.id,
+        (prog) => {
+          set({ transcriptionProgress: prog });
+        },
+        (newSegment) => {
+          // Stream new segment immediately into UI transcript list
+          set((state) => {
+            const exists = state.activeTranscript.some((s) => s.id === newSegment.id);
+            const updated = exists ? state.activeTranscript : [...state.activeTranscript, newSegment];
+            return {
+              activeTranscript: updated.sort((a, b) => a.start - b.start),
+            };
+          });
+        }
+      );
 
       set({
         activeTranscript: segments,

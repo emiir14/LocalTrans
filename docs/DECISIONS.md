@@ -74,3 +74,17 @@ Este documento registra todas las decisiones técnicas tomadas durante el desarr
   1. *Detener y volver a iniciar manualmente:* Obliga a quitarse los guantes, escribir nombres o iniciales, aceptar diálogos y volver a presionar Grabar en cada turno.
   2. *Mantener una sola sesión de 8 horas corridas:* Mezcla las historias clínicas de todos los pacientes del día en un solo archivo de texto gigante, complicando la separación posterior.
 - **Motivo:** Se adapta a la dinámica real del consultorio odontológico, donde las consultas se suceden una tras otra y el profesional requiere una acción inmediata con cero fricción cognitiva.
+
+---
+
+## 8. Transcripción con Streaming Visual en Tiempo Real y Protección contra Recargas
+
+- **Decisión:**
+  1. **Streaming Segmento a Segmento:** Modificar el pipeline de transcripción para emitir un evento `onSegmentTranscribed` y persistir cada segmento atómicamente en IndexedDB en el instante exacto en que Whisper lo finaliza. En vez de esperar a que termine toda la grabación (ej. 20-30 minutos) para mostrar el texto, la interfaz visual renderiza los fragmentos inmediatamente a medida que van saliendo del Web Worker, con desplazamiento automático suave (`autoScroll`), destaque visual del fragmento más reciente y un radar con la última frase reconocida.
+  2. **Protección `beforeunload`:** Registrar un listener en `window.addEventListener('beforeunload')` activo mientras haya una grabación o transcripción en curso. Si el usuario intenta recargar la pestaña o cerrar el navegador, el sistema activa el diálogo nativo de confirmación del navegador para impedir cancelaciones involuntarias.
+  3. **Reanudación Atómica:** Si el usuario decide recargar o se produce un reinicio forzado, la sesión no se corrompe: al iniciar la aplicación, cualquier sesión en estado `transcribing` se restablece limpiamente a `recorded` conservando todos los segmentos ya procesados. Al presionar "Reanudar transcripción", el motor omite los fragmentos existentes y continúa directamente desde el último segundo procesado.
+  4. **Sensibilidad VAD Ajustada:** Rediseñar el umbral de energía en `ClinicalAudioSegmenter` para admitir señales de baja ganancia o micrófonos sin control automático de ganancia (AGC), evitando que audios con voz suave sean catalogados erróneamente como silencio absoluto.
+- **Alternativas consideradas:**
+  1. *Buffer acumulativo hasta fin de archivo:* Mantiene la pantalla con un spinner estático durante minutos sin feedback visual de avance, generando incertidumbre y sensación de fallo en el usuario.
+  2. *Bloqueo de recarga sin guardado incremental:* Si la pestaña fallaba a mitad de camino, se perdía todo el progreso de transcripción.
+- **Motivo:** Brinda certidumbre total al usuario clínico de que su equipo está trabajando activamente, permite ir leyendo y copiando fragmentos sin esperar al final del audio y garantiza tolerancia total a fallos y recargas de página.

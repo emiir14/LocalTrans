@@ -7,6 +7,7 @@ import {
   ISettingsRepository,
   ITranscriptRepository,
 } from '../interfaces';
+import { formatTimeDisplay } from '../export/formatter';
 import { ModelTier, TranscriptSegment } from '../types';
 import { WhisperTranscriptionEngine } from './engine';
 import { ClinicalAudioSegmenter } from './vad';
@@ -20,6 +21,11 @@ export interface PipelineProgress {
   statusText: string;
   isDownloadingModel?: boolean;
   modelDownloadProgress?: number;
+  lastTranscribedText?: string;
+  currentSegmentTime?: string;
+  logs?: string[];
+  activeBackend?: 'webgpu' | 'wasm';
+  activeTier?: ModelTier;
 }
 
 export class TranscriptionPipeline {
@@ -46,7 +52,8 @@ export class TranscriptionPipeline {
   public async run(
     sessionId: string,
     workspaceId: string,
-    onProgress?: (progress: PipelineProgress) => void
+    onProgress?: (progress: PipelineProgress) => void,
+    onSegmentTranscribed?: (segment: TranscriptSegment) => void
   ): Promise<TranscriptSegment[]> {
     this.isCancelled = false;
     const session = await this.sessionRepo.getById(sessionId);
@@ -141,6 +148,10 @@ export class TranscriptionPipeline {
 
     let previousText = existingSegments.length > 0 ? existingSegments[existingSegments.length - 1].text : '';
 
+    const logs: string[] = [];
+    logs.push(`VAD completado: ${speechSegments.length} fragmentos de voz detectados en el audio`);
+    logs.push(`Iniciando transcripción con motor local (${this.engine.getActiveBackend().toUpperCase()})`);
+
     // 7. Transcribe segment by segment
     for (let i = 0; i < speechSegments.length; i++) {
       if (this.isCancelled) {
@@ -155,6 +166,8 @@ export class TranscriptionPipeline {
       if (completedEndTimes.has(roundedEnd)) {
         continue;
       }
+
+      const segTimeRange = `${formatTimeDisplay(speechSeg.startSec)} - ${formatTimeDisplay(speechSeg.endSec)}`;
 
       // Calculate estimated time remaining based on throughput
       const elapsedSec = (Date.now() - startTimeMs) / 1000;
@@ -175,8 +188,13 @@ export class TranscriptionPipeline {
         currentSegment: transcribedCount + 1,
         totalSegments: remainingToTranscribe,
         estimatedRemainingSec,
-        statusText: `Transcribiendo segmento ${transcribedCount + 1} de ${remainingToTranscribe}...`,
+        statusText: `Transcribiendo segmento ${transcribedCount + 1} de ${remainingToTranscribe} (${segTimeRange})...`,
         isDownloadingModel: false,
+        currentSegmentTime: segTimeRange,
+        lastTranscribedText: previousText || undefined,
+        logs: [...logs],
+        activeBackend: this.engine.getActiveBackend(),
+        activeTier: this.engine.getActiveTier(),
       });
 
       // Execute Whisper transcription on Web Worker
@@ -188,7 +206,7 @@ export class TranscriptionPipeline {
         endSec: speechSeg.endSec,
       });
 
-      const rawText = res.text;
+      const rawText = res.text?.trim() || '';
 
       // Filter hallucinations & consecutive duplicates
       if (rawText && !isHallucination(rawText) && !isConsecutiveDuplicate(rawText, previousText)) {
@@ -211,6 +229,31 @@ export class TranscriptionPipeline {
         await this.transcriptRepo.addSegment(segment);
         allSegments.push(segment);
         previousText = processedText;
+
+        logs.push(`[${segTimeRange}] "${processedText.length > 50 ? processedText.slice(0, 50) + '...' : processedText}"`);
+        if (logs.length > 30) logs.shift();
+
+        // Stream segment live to the UI immediately!
+        onSegmentTranscribed?.(segment);
+
+        // Update progress with latest phrase
+        onProgress?.({
+          sessionId,
+          percent: Math.min(99, progressPct),
+          currentSegment: transcribedCount + 1,
+          totalSegments: remainingToTranscribe,
+          estimatedRemainingSec,
+          statusText: `Transcribiendo (${transcribedCount + 1}/${remainingToTranscribe})...`,
+          isDownloadingModel: false,
+          currentSegmentTime: segTimeRange,
+          lastTranscribedText: processedText,
+          logs: [...logs],
+          activeBackend: this.engine.getActiveBackend(),
+          activeTier: this.engine.getActiveTier(),
+        });
+      } else {
+        logs.push(`[${segTimeRange}] (Filtro acústico: ruido de turbina o silencio)`);
+        if (logs.length > 30) logs.shift();
       }
 
       transcribedCount++;
@@ -222,6 +265,8 @@ export class TranscriptionPipeline {
       modelTierUsed: this.engine.getActiveTier(),
     });
 
+    logs.push('¡Transcripción finalizada y guardada en el dispositivo!');
+
     onProgress?.({
       sessionId,
       percent: 100,
@@ -229,6 +274,10 @@ export class TranscriptionPipeline {
       totalSegments: remainingToTranscribe,
       estimatedRemainingSec: 0,
       statusText: '¡Transcripción completada con éxito!',
+      lastTranscribedText: previousText || undefined,
+      logs: [...logs],
+      activeBackend: this.engine.getActiveBackend(),
+      activeTier: this.engine.getActiveTier(),
     });
 
     return allSegments.sort((a, b) => a.start - b.start);

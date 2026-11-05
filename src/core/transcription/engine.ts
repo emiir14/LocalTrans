@@ -33,6 +33,10 @@ export class WhisperTranscriptionEngine implements ITranscriptionEngine {
     return this.activeBackend;
   }
 
+  public getActiveBackend(): 'webgpu' | 'wasm' {
+    return this.activeBackend;
+  }
+
   public async load(
     tier: ModelTier = 'auto',
     onProgress?: (data: ProgressCallbackData) => void
@@ -134,28 +138,29 @@ export class WhisperTranscriptionEngine implements ITranscriptionEngine {
 
     const { initialPrompt, segmentIndex = 0, startSec = 0, endSec = audio.length / 16000 } = options;
 
-    const runSegment = async (): Promise<any> => {
+    const runSegment = async (audioData: Float32Array): Promise<any> => {
       return new Promise((resolve, reject) => {
         this.pendingSegmentResolver = resolve;
         this.pendingSegmentRejecter = reject;
 
+        const copy = audioData.slice();
         this.worker?.postMessage(
           {
             type: 'transcribe_segment',
             payload: {
               segmentIndex,
-              samples: audio.buffer,
+              samples: copy.buffer,
               startSec,
               endSec,
               initialPrompt,
             },
           },
-          [audio.buffer]
+          [copy.buffer]
         );
       });
     };
 
-    let result = await runSegment();
+    let result = await runSegment(audio);
 
     // Check for WebGPU corruption on first segments
     if (this.activeBackend === 'webgpu') {
@@ -169,11 +174,8 @@ export class WhisperTranscriptionEngine implements ITranscriptionEngine {
         const config = TIER_CONFIGS[this.resolvedTier];
         await this.initWorker(config.modelId, 'wasm', 'q4');
 
-        // Re-transcribe with fresh audio copy (since buffer was transferred)
-        // audio.buffer may be detached; recreate Float32Array if needed
-        const freshBuffer = new Float32Array(audio.length);
-        // Note: in pipeline caller, caller retains audio or passes slice
-        result = await runSegment();
+        // Re-transcribe with audio in WASM mode
+        result = await runSegment(audio);
       }
     }
 

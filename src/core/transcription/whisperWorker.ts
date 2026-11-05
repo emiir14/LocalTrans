@@ -91,14 +91,19 @@ self.onmessage = async (event: MessageEvent) => {
 
         const { segmentIndex, samples, startSec, endSec, initialPrompt } = payload;
         const floatAudio = new Float32Array(samples);
+        const durationSec = floatAudio.length / 16000;
 
         const options: any = {
           language: 'es',
           task: 'transcribe',
           return_timestamps: true,
-          chunk_length_s: 30,
-          stride_length_s: 5,
         };
+
+        // Only add chunking if the segment itself is longer than 30s
+        if (durationSec > 30) {
+          options.chunk_length_s = 30;
+          options.stride_length_s = 5;
+        }
 
         if (initialPrompt) {
           options.initial_prompt = initialPrompt;
@@ -112,7 +117,8 @@ self.onmessage = async (event: MessageEvent) => {
             segmentIndex,
             startSec,
             endSec,
-            text: output.text || '',
+            durationSec,
+            text: (output.text || '').trim(),
             chunks: output.chunks || [],
           },
         });

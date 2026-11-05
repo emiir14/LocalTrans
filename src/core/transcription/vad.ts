@@ -133,9 +133,16 @@ export class ClinicalAudioSegmenter {
 
     // If no distinct voice was separated, fallback to windowing if overall audio has signal
     if (intervals.length === 0) {
-      const avgEnergy = energySum / numFrames;
-      if (avgEnergy > 0.005) {
-        // Break into maxChunkDurationSec chunks
+      const avgEnergy = numFrames > 0 ? energySum / numFrames : 0;
+      // Accept even subtle voice signals (avgEnergy > 0.0005 or max peak > 0.005)
+      let maxPeak = 0;
+      for (let s = 0; s < Math.min(audio.length, 32000); s++) {
+        const absVal = Math.abs(audio[s]);
+        if (absVal > maxPeak) maxPeak = absVal;
+      }
+
+      if (avgEnergy > 0.0005 || maxPeak > 0.005) {
+        // Break into maxChunkDurationSec chunks (~25s)
         return this.sliceIntoEqualChunks(audio, this.maxChunkDurationSec);
       }
       return [];
