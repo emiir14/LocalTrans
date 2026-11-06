@@ -46,7 +46,7 @@ export default function App() {
   }, [isRecording, transcribingSessionId]);
 
   return (
-    <div className="min-h-full flex flex-col bg-[#FAFAF8] text-slate-800 dark:bg-slate-950 dark:text-slate-100 transition-colors">
+    <div className="min-h-full flex flex-col bg-[#EDEFEA] text-slate-800 dark:bg-slate-950 dark:text-slate-100 transition-colors">
       {/* Top Bar Header (suppressed during active recording to ensure zero distraction) */}
       {currentView !== 'recording' && <TopBar />}
 

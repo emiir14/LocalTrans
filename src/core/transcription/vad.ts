@@ -33,13 +33,12 @@ export class ClinicalAudioSegmenter {
   constructor(options: VadOptions = {}) {
     this.sampleRate = options.sampleRate ?? 16000;
     this.frameDurationMs = options.frameDurationMs ?? 30;
-    this.maxChunkDurationSec = options.maxChunkDurationSec ?? 30;
+    this.maxChunkDurationSec = options.maxChunkDurationSec ?? 24;
     this.minChunkDurationSec = options.minChunkDurationSec ?? 0.8;
     this.overlapSec = options.overlapSec ?? 0.25;
 
-    const frameSamples = Math.floor((this.sampleRate * this.frameDurationMs) / 1000);
     const minSpeechMs = options.minSpeechDurationMs ?? 250;
-    const minSilenceMs = options.minSilenceDurationMs ?? 400;
+    const minSilenceMs = options.minSilenceDurationMs ?? 600;
 
     this.minSpeechFrames = Math.max(1, Math.floor(minSpeechMs / this.frameDurationMs));
     this.minSilenceFrames = Math.max(1, Math.floor(minSilenceMs / this.frameDurationMs));
@@ -63,16 +62,25 @@ export class ClinicalAudioSegmenter {
 
     // Compute frame energies and estimate background noise floor
     const energies = new Float32Array(numFrames);
+    const zcr = new Float32Array(numFrames);
     let energySum = 0;
 
     for (let i = 0; i < numFrames; i++) {
       const offset = i * frameSize;
       let sumSq = 0;
+      let zeroCrossings = 0;
       for (let j = 0; j < frameSize; j++) {
         const val = audio[offset + j];
         sumSq += val * val;
+        if (j > 0) {
+          const prev = audio[offset + j - 1];
+          if ((val >= 0 && prev < 0) || (val < 0 && prev >= 0)) {
+            zeroCrossings++;
+          }
+        }
       }
       energies[i] = Math.sqrt(sumSq / frameSize);
+      zcr[i] = zeroCrossings / frameSize;
       energySum += energies[i];
     }
 
@@ -116,19 +124,49 @@ export class ClinicalAudioSegmenter {
       startFrame: number;
       endFrame: number;
     }
-    const intervals: Interval[] = [];
+    const rawIntervals: Interval[] = [];
     let intervalStart = -1;
 
     for (let i = 0; i < numFrames; i++) {
       if (smoothedSpeech[i] === 1 && intervalStart === -1) {
         intervalStart = i;
       } else if (smoothedSpeech[i] === 0 && intervalStart !== -1) {
-        intervals.push({ startFrame: intervalStart, endFrame: i });
+        rawIntervals.push({ startFrame: intervalStart, endFrame: i });
         intervalStart = -1;
       }
     }
     if (intervalStart !== -1) {
-      intervals.push({ startFrame: intervalStart, endFrame: numFrames });
+      rawIntervals.push({ startFrame: intervalStart, endFrame: numFrames });
+    }
+
+    // Filter out intervals that are purely stationary suction / compressor hiss
+    // (High continuous ZCR > 0.40 with almost zero syllabic variance)
+    const intervals: Interval[] = [];
+    for (const interval of rawIntervals) {
+      const len = interval.endFrame - interval.startFrame;
+      if (len > 35) { // More than ~1s
+        let sumE = 0;
+        let sumZ = 0;
+        for (let f = interval.startFrame; f < interval.endFrame; f++) {
+          sumE += energies[f];
+          sumZ += zcr[f];
+        }
+        const meanE = sumE / len;
+        const meanZ = sumZ / len;
+
+        let varianceE = 0;
+        for (let f = interval.startFrame; f < interval.endFrame; f++) {
+          const diff = energies[f] - meanE;
+          varianceE += diff * diff;
+        }
+        varianceE /= len;
+
+        // Discard flat high-frequency hiss from saliva suction
+        if (meanZ > 0.42 && varianceE < 0.000015) {
+          continue;
+        }
+      }
+      intervals.push(interval);
     }
 
     // If no distinct voice was separated, fallback to windowing if overall audio has signal
@@ -148,8 +186,9 @@ export class ClinicalAudioSegmenter {
       return [];
     }
 
-    // Group intervals into chunks of at most maxChunkDurationSec (~30s)
+    // Group intervals into coherent speech chunks (up to maxChunkDurationSec)
     const maxFramesPerChunk = Math.floor((this.maxChunkDurationSec * 1000) / this.frameDurationMs);
+    const maxSilenceGapFrames = Math.floor((1.5 * 1000) / this.frameDurationMs); // Splits if silence gap between phrases exceeds 1.5s
     const segments: SpeechSegment[] = [];
 
     let currentStartFrame = Math.max(0, intervals[0].startFrame - 4); // Include leading breath/onset
@@ -157,13 +196,14 @@ export class ClinicalAudioSegmenter {
 
     for (let k = 1; k < intervals.length; k++) {
       const nextInterval = intervals[k];
+      const silenceGap = nextInterval.startFrame - currentEndFrame;
       const proposedDurationFrames = nextInterval.endFrame - currentStartFrame;
 
-      if (proposedDurationFrames <= maxFramesPerChunk) {
-        // Fits in current chunk
+      // Merge if within maxChunk duration and gap is not an extended idle silence
+      if (proposedDurationFrames <= maxFramesPerChunk && silenceGap <= maxSilenceGapFrames) {
         currentEndFrame = nextInterval.endFrame;
       } else {
-        // Chunk is full; emit current chunk with trailing margin
+        // Chunk is ready; emit current speech chunk with trailing margin
         const safeEndFrame = Math.min(numFrames, currentEndFrame + 4);
         const startSec = (currentStartFrame * frameSize) / this.sampleRate;
         const endSec = (safeEndFrame * frameSize) / this.sampleRate;
@@ -178,7 +218,7 @@ export class ClinicalAudioSegmenter {
           });
         }
 
-        // Start next chunk with slight overlap
+        // Start next chunk without carrying idle silence
         const overlapFrames = Math.floor((this.overlapSec * 1000) / this.frameDurationMs);
         currentStartFrame = Math.max(0, nextInterval.startFrame - overlapFrames);
         currentEndFrame = nextInterval.endFrame;

@@ -41,6 +41,11 @@ export class WhisperTranscriptionEngine implements ITranscriptionEngine {
     tier: ModelTier = 'auto',
     onProgress?: (data: ProgressCallbackData) => void
   ): Promise<void> {
+    if (this.isLoaded && this.worker && this.activeTier === tier) {
+      // Already warm and compiled in GPU/CPU memory; instant ready (0ms)
+      return;
+    }
+
     this.activeTier = tier;
 
     // Request persistent storage so downloaded model weights are retained
@@ -181,10 +186,7 @@ export class WhisperTranscriptionEngine implements ITranscriptionEngine {
 
     return {
       text: result.text.trim(),
-      chunks: result.chunks?.map((c: any) => ({
-        timestamp: c.timestamp as [number, number],
-        text: c.text,
-      })) || [],
+      chunks: [],
     };
   }
 
@@ -196,4 +198,13 @@ export class WhisperTranscriptionEngine implements ITranscriptionEngine {
     }
     this.isLoaded = false;
   }
+}
+
+let sharedEngineInstance: WhisperTranscriptionEngine | null = null;
+
+export function getSharedWhisperEngine(options: { onCorruptionFallback?: (reason: string) => void } = {}): WhisperTranscriptionEngine {
+  if (!sharedEngineInstance) {
+    sharedEngineInstance = new WhisperTranscriptionEngine(options);
+  }
+  return sharedEngineInstance;
 }

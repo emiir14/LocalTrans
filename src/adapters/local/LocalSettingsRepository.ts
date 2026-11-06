@@ -9,6 +9,7 @@ const DEFAULT_SETTINGS: (workspaceId: string) => AppSettings = (workspaceId) => 
   noiseSuppression: false, // Turned off by default as requested in prompt to preserve voice frequencies
   requireConsent: true,
   autoTranscribeOnStop: false,
+  progressiveTranscription: true,
   theme: 'system',
   updatedAt: Date.now(),
 });

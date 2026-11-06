@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { applyGlossary } from '../../config/glossary';
+import { isConsecutiveDuplicate, isHallucination } from '../../config/hallucinations';
 import { LocalAudioStore } from '../adapters/local/LocalAudioStore';
 import { LocalAuthProvider } from '../adapters/local/LocalAuthProvider';
 import { LocalGlossaryRepository } from '../adapters/local/LocalGlossaryRepository';
@@ -6,8 +8,10 @@ import { LocalSessionRepository } from '../adapters/local/LocalSessionRepository
 import { LocalSettingsRepository } from '../adapters/local/LocalSettingsRepository';
 import { LocalTranscriptRepository } from '../adapters/local/LocalTranscriptRepository';
 import { BatteryStatus, RecordingController, VuData } from '../core/audio/recordingController';
+import { getSharedWhisperEngine } from '../core/transcription/engine';
 import { PipelineProgress, TranscriptionPipeline } from '../core/transcription/pipeline';
-import { AppSettings, GlossaryEntry, Profile, Session, TranscriptSegment, Workspace } from '../core/types';
+import { ClinicalAudioSegmenter } from '../core/transcription/vad';
+import { AppSettings, AudioChunk, GlossaryEntry, Profile, Session, TranscriptSegment, Workspace } from '../core/types';
 
 // Global singletons for repositories
 export const sessionRepo = new LocalSessionRepository();
@@ -16,6 +20,101 @@ export const audioStore = new LocalAudioStore();
 export const glossaryRepo = new LocalGlossaryRepository();
 export const settingsRepo = new LocalSettingsRepository();
 export const authProvider = new LocalAuthProvider();
+
+/**
+ * Progressive background pre-transcriber that processes audio chunks during recording
+ */
+class BackgroundChunkTranscriber {
+  private queue: Array<{ chunk: AudioChunk; sessionId: string; workspaceId: string }> = [];
+  private isProcessing = false;
+  private segmenter = new ClinicalAudioSegmenter();
+  private lastTranscribedText = '';
+
+  public enqueue(chunk: AudioChunk, sessionId: string, workspaceId: string) {
+    this.queue.push({ chunk, sessionId, workspaceId });
+    this.processQueue();
+  }
+
+  private async processQueue() {
+    if (this.isProcessing || this.queue.length === 0) return;
+    this.isProcessing = true;
+
+    try {
+      const item = this.queue.shift();
+      if (!item) return;
+
+      const { chunk, sessionId, workspaceId } = item;
+      const engine = getSharedWhisperEngine();
+      if (!engine.getBackend()) {
+        await engine.load('fast');
+      }
+
+      // Convert chunk 16kHz Int16 to Float32
+      const int16 = new Int16Array(chunk.pcmData);
+      const float32 = new Float32Array(int16.length);
+      for (let i = 0; i < int16.length; i++) {
+        const s = int16[i];
+        float32[i] = s < 0 ? s / 0x8000 : s / 0x7fff;
+      }
+
+      const speechSegments = this.segmenter.segmentAudio(float32);
+      if (speechSegments.length === 0) return;
+
+      const glossaryEntries = await glossaryRepo.getAll(workspaceId);
+      const initialPrompt =
+        'Consulta odontológica en español latino. Términos: conductometría, endodoncia, amalgama, obturación, periodonto, composite, carilla, oclusal, mesial, distal.';
+
+      for (let i = 0; i < speechSegments.length; i++) {
+        const seg = speechSegments[i];
+        const segStart = chunk.startTime + seg.startSec;
+        const segEnd = chunk.startTime + seg.endSec;
+
+        const res = await engine.transcribe(seg.samples, {
+          language: 'es',
+          initialPrompt,
+          segmentIndex: chunk.chunkIndex * 10 + i,
+          startSec: segStart,
+          endSec: segEnd,
+        });
+
+        const rawText = res.text?.trim() || '';
+        if (rawText && !isHallucination(rawText) && !isConsecutiveDuplicate(rawText, this.lastTranscribedText)) {
+          const processedText = applyGlossary(rawText, glossaryEntries);
+          const segment: TranscriptSegment = {
+            id: `seg_${sessionId}_bg_${Date.now()}_${chunk.chunkIndex}_${i}`,
+            sessionId,
+            start: segStart,
+            end: segEnd,
+            text: processedText,
+            originalText: rawText,
+            edited: false,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          };
+
+          await transcriptRepo.addSegment(segment);
+          this.lastTranscribedText = processedText;
+
+          // If user is viewing this session, update store in real-time
+          if (useAppStore.getState().currentSessionId === sessionId) {
+            useAppStore.setState((state) => ({
+              activeTranscript: [...state.activeTranscript, segment].sort((a, b) => a.start - b.start),
+            }));
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[BackgroundChunkTranscriber] Non-blocking notice:', err);
+    } finally {
+      this.isProcessing = false;
+      if (this.queue.length > 0) {
+        this.processQueue();
+      }
+    }
+  }
+}
+
+export const backgroundChunkTranscriber = new BackgroundChunkTranscriber();
 
 export type AppView = 'home' | 'recording' | 'detail' | 'settings' | 'privacy' | 'benchmark';
 
@@ -72,6 +171,9 @@ interface AppState {
   startTranscription: (sessionId: string) => Promise<void>;
   cancelTranscription: () => void;
   updateSegmentText: (segmentId: string, newText: string) => Promise<void>;
+  deleteTranscriptSegment: (segmentId: string) => Promise<void>;
+  deleteTranscriptForSession: (sessionId: string) => Promise<void>;
+  deleteSession: (sessionId: string) => Promise<void>;
   deleteAudioForSession: (sessionId: string) => Promise<void>;
   clearTranscribedAudioAll: () => Promise<void>;
   clearAllData: () => Promise<void>;
@@ -153,6 +255,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     // Check battery
     const batt = await RecordingController.getBatteryStatus();
     set({ battery: batt });
+
+    // Pre-warm the shared Whisper engine in background after initial render
+    if (typeof window !== 'undefined') {
+      setTimeout(() => {
+        getSharedWhisperEngine().load('fast').catch(() => {});
+      }, 1500);
+    }
   },
 
   setView: (view: AppView, sessionId?: string) => {
@@ -210,7 +319,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     controller.setCallbacks({
       onTimeUpdate: (sec) => set({ recordingDurationSec: sec }),
       onVuUpdate: (vu) => set({ vu }),
-      onChunkSaved: (lastSavedAt) => set({ lastSavedAt }),
+      onChunkSaved: (lastSavedAt, _totalChunks, chunk) => {
+        set({ lastSavedAt });
+        const settings = get().settings;
+        if ((settings?.progressiveTranscription ?? true) && chunk) {
+          backgroundChunkTranscriber.enqueue(chunk, chunk.sessionId, ws.id);
+        }
+      },
       onSilenceWarning: (silent) => set({ silenceWarning: silent }),
       onWakeLockChange: (active) => set({ wakeLockActive: active }),
       onError: (err) => {
@@ -454,6 +569,37 @@ export const useAppStore = create<AppState>((set, get) => ({
       s.id === segmentId ? { ...s, text: newText, edited: true } : s
     );
     set({ activeTranscript: active });
+  },
+
+  deleteTranscriptSegment: async (segmentId: string) => {
+    await transcriptRepo.deleteSegment(segmentId);
+    set((state) => ({
+      activeTranscript: state.activeTranscript.filter((s) => s.id !== segmentId),
+    }));
+    get().showToast('Fragmento eliminado', 'info');
+  },
+
+  deleteTranscriptForSession: async (sessionId: string) => {
+    await transcriptRepo.deleteBySessionId(sessionId);
+    await sessionRepo.update(sessionId, { status: 'recorded' });
+    if (get().currentSessionId === sessionId) {
+      set({ activeTranscript: [] });
+      await get().loadSessionDetail(sessionId);
+    }
+    await get().loadSessions();
+    get().showToast('Transcripción eliminada. El audio original se conserva.', 'info');
+  },
+
+  deleteSession: async (sessionId: string) => {
+    await audioStore.deleteAudio(sessionId);
+    await transcriptRepo.deleteBySessionId(sessionId);
+    await sessionRepo.delete(sessionId);
+    if (get().currentSessionId === sessionId) {
+      set({ activeSession: null, activeTranscript: [], currentSessionId: null });
+      get().setView('home');
+    }
+    await get().loadSessions();
+    get().showToast('Consulta y datos asociados eliminados', 'info');
   },
 
   deleteAudioForSession: async (sessionId: string) => {

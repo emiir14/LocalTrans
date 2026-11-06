@@ -10,6 +10,7 @@ import {
   FileAudio,
   CheckCircle2,
   RotateCw,
+  Trash2,
 } from 'lucide-react';
 import { formatTimeDisplay } from '../core/export/formatter';
 import { Session } from '../core/types';
@@ -20,6 +21,7 @@ export const HomeView: React.FC = () => {
     sessions,
     setView,
     startRecording,
+    deleteSession,
     unclosedSession,
     recoverRecording,
     dismissRecovery,
@@ -190,7 +192,12 @@ export const HomeView: React.FC = () => {
       {filteredSessions.length > 0 ? (
         <div className="divide-y divide-slate-100 dark:divide-slate-800/80 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs overflow-hidden">
           {filteredSessions.map((session) => (
-            <SessionRow key={session.id} session={session} onClick={() => setView('detail', session.id)} />
+            <SessionRow
+              key={session.id}
+              session={session}
+              onClick={() => setView('detail', session.id)}
+              onDelete={() => deleteSession(session.id)}
+            />
           ))}
         </div>
       ) : (
@@ -291,7 +298,11 @@ export const HomeView: React.FC = () => {
 };
 
 // Row component adhering to Zero-Pill and 44px touch targets
-const SessionRow: React.FC<{ session: Session; onClick: () => void }> = ({ session, onClick }) => {
+const SessionRow: React.FC<{
+  session: Session;
+  onClick: () => void;
+  onDelete: () => void;
+}> = ({ session, onClick, onDelete }) => {
   const dateStr = new Date(session.createdAt).toLocaleDateString('es-AR', {
     day: 'numeric',
     month: 'short',
@@ -342,9 +353,16 @@ const SessionRow: React.FC<{ session: Session; onClick: () => void }> = ({ sessi
   };
 
   return (
-    <button
+    <div
       onClick={onClick}
-      className="w-full text-left p-4 sm:p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors flex items-center justify-between gap-4 group min-h-[64px]"
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          onClick();
+        }
+      }}
+      className="w-full text-left p-4 sm:p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors flex items-center justify-between gap-4 group min-h-[64px] cursor-pointer"
     >
       <div className="flex items-center gap-4 min-w-0">
         <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 group-hover:bg-teal-50 dark:group-hover:bg-teal-950/60 group-hover:text-teal-600 transition-colors">
@@ -371,10 +389,27 @@ const SessionRow: React.FC<{ session: Session; onClick: () => void }> = ({ sessi
         </div>
       </div>
 
-      <div className="flex items-center gap-4 shrink-0">
+      <div className="flex items-center gap-3 shrink-0">
         <div className="text-right hidden sm:block">{renderStatus()}</div>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (
+              window.confirm(
+                `¿Eliminar la consulta "${session.reference || session.title}"? Se borrará tanto la grabación de audio como la transcripción de este equipo.`
+              )
+            ) {
+              onDelete();
+            }
+          }}
+          className="p-2 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center"
+          title="Eliminar consulta"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
         <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 group-hover:translate-x-0.5 transition-all" />
       </div>
-    </button>
+    </div>
   );
 };

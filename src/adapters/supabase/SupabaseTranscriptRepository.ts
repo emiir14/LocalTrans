@@ -22,6 +22,10 @@ export class SupabaseTranscriptRepository implements ITranscriptRepository {
     throw new Error('Supabase adapter not activated. Set NEXT_PUBLIC_MODE=cloud to enable.');
   }
 
+  public async deleteSegment(_id: string): Promise<void> {
+    throw new Error('Supabase adapter not activated. Set NEXT_PUBLIC_MODE=cloud to enable.');
+  }
+
   public async deleteBySessionId(_sessionId: string): Promise<void> {
     throw new Error('Supabase adapter not activated. Set NEXT_PUBLIC_MODE=cloud to enable.');
   }

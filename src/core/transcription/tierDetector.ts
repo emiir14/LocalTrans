@@ -22,35 +22,35 @@ export interface ModelTierConfig {
 }
 
 export const TIER_CONFIGS: Record<Exclude<ModelTier, 'auto'>, ModelTierConfig> = {
+  fast: {
+    tier: 'fast',
+    modelId: 'onnx-community/whisper-base',
+    label: 'Rápida (Recomendada)',
+    description: 'Máxima velocidad (~75 MB). Procesa cada fragmento en 1-2 segundos sin saturar el equipo.',
+    defaultBackend: 'webgpu',
+    dtype: 'q4',
+    estimatedDownloadMb: 75,
+  },
+  balanced: {
+    tier: 'balanced',
+    modelId: 'onnx-community/whisper-small',
+    label: 'Equilibrada',
+    description: 'Excelente balance para teléfonos modernos y laptops (~140 MB).',
+    defaultBackend: 'webgpu',
+    dtype: 'q4',
+    estimatedDownloadMb: 140,
+  },
   max: {
     tier: 'max',
     modelId: 'onnx-community/whisper-large-v3-turbo',
-    label: 'Máxima precisión',
-    description: 'Mayor fidelidad en términos odontológicos complejos. Requiere PC con WebGPU.',
+    label: 'Máxima precisión (Pesada)',
+    description: 'Mayor fidelidad en casos específicos (~350 MB). Requiere PC potente con WebGPU.',
     defaultBackend: 'webgpu',
     dtype: {
       encoder_model: 'fp16',
       decoder_model_merged: 'q4',
     },
     estimatedDownloadMb: 350,
-  },
-  balanced: {
-    tier: 'balanced',
-    modelId: 'onnx-community/whisper-small',
-    label: 'Equilibrada',
-    description: 'Excelente balance para teléfonos modernos y laptops.',
-    defaultBackend: 'webgpu',
-    dtype: 'q4',
-    estimatedDownloadMb: 140,
-  },
-  fast: {
-    tier: 'fast',
-    modelId: 'onnx-community/whisper-base',
-    label: 'Rápida y liviana',
-    description: 'Máxima compatibilidad en CPU/WASM sin requerir tarjeta gráfica.',
-    defaultBackend: 'wasm',
-    dtype: 'q4',
-    estimatedDownloadMb: 75,
   },
 };
 
@@ -92,30 +92,11 @@ export async function detectHardwareCapabilities(): Promise<HardwareCapabilities
     }
   }
 
-  // Determine recommended tier
-  let recommendedTier: ModelTier = 'fast';
-  let recommendedBackend: 'webgpu' | 'wasm' = 'wasm';
-
-  if (hasWebGpu) {
-    recommendedBackend = 'webgpu';
-    if (isIos) {
-      // iOS WebGPU can be memory-restricted; default to balanced
-      recommendedTier = 'balanced';
-    } else if (isMobile) {
-      recommendedTier = 'balanced';
-    } else {
-      // Desktop / PC with WebGPU
-      if (!deviceMemoryGb || deviceMemoryGb >= 8) {
-        recommendedTier = 'max';
-      } else {
-        recommendedTier = 'balanced';
-      }
-    }
-  } else {
-    // WASM only
-    recommendedBackend = 'wasm';
-    recommendedTier = 'fast';
-  }
+  // Recommended tier for auto mode:
+  // Default to 'fast' (whisper-base) across all devices for fast, responsive processing.
+  // Uses WebGPU if present, or all CPU cores on WASM fallback.
+  const recommendedTier: ModelTier = 'fast';
+  const recommendedBackend: 'webgpu' | 'wasm' = hasWebGpu ? 'webgpu' : 'wasm';
 
   return {
     hasWebGpu,

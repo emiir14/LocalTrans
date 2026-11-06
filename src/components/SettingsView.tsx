@@ -100,23 +100,23 @@ export const SettingsView: React.FC = () => {
           {[
             {
               id: 'auto',
-              label: 'Automático (Recomendado)',
-              desc: 'Detecta si hay WebGPU y suficiente memoria para elegir el modelo ideal.',
+              label: 'Automático (Ultra rápido)',
+              desc: 'Configura el modelo optimizado (whisper-base) con aceleración WebGPU y multihilo automático.',
             },
             {
               id: 'fast',
               label: 'Rápida (whisper-base)',
-              desc: 'Máxima velocidad. Ideal para teléfonos modestos o sin acelerador gráfico (~75 MB).',
+              desc: 'Máxima velocidad (~75 MB). Procesa cada fragmento en 1 a 2 segundos con mínimo consumo.',
             },
             {
               id: 'balanced',
               label: 'Equilibrada (whisper-small)',
-              desc: 'Gran balance entre precisión y consumo para celulares modernos y laptops (~140 MB).',
+              desc: 'Excelente balance para teléfonos modernos y laptops (~140 MB).',
             },
             {
               id: 'max',
               label: 'Máxima (whisper-large-v3-turbo)',
-              desc: 'Mayor fidelidad en terminología clínica compleja. Requiere PC con WebGPU (~350 MB).',
+              desc: 'Modelo pesado (~350 MB) para transcripción de máxima resolución. Requiere PC con WebGPU.',
             },
           ].map((tier) => {
             const isSelected = (settings?.modelTier || 'auto') === tier.id;
@@ -205,6 +205,35 @@ export const SettingsView: React.FC = () => {
               <div
                 className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
                   settings?.autoTranscribeOnStop ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Progressive Background Transcription Toggle */}
+          <div className="flex items-center justify-between gap-4 pt-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                  Transcripción progresiva en segundo plano
+                </span>
+                <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 rounded-md">
+                  Recomendado
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 max-w-lg leading-relaxed">
+                Transcribe los bloques de audio cada 30 segundos mientras la consulta continúa. Al finalizar la grabación, el 95% a 100% del texto ya está listo de inmediato sin tiempos de espera.
+              </p>
+            </div>
+            <button
+              onClick={() => updateSettings({ progressiveTranscription: !(settings?.progressiveTranscription ?? true) })}
+              className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${
+                (settings?.progressiveTranscription ?? true) ? 'bg-teal-600' : 'bg-slate-300 dark:bg-slate-700'
+              }`}
+            >
+              <div
+                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                  (settings?.progressiveTranscription ?? true) ? 'translate-x-5' : 'translate-x-0'
                 }`}
               />
             </button>
@@ -334,12 +363,17 @@ export const SettingsView: React.FC = () => {
 
       {/* Section 4: Visual Theme */}
       <section className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 p-6 shadow-xs space-y-4">
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-          Aspecto visual
-        </h2>
+        <div>
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            Aspecto visual
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            El modo claro utiliza una paleta cálida antifatiga visual (lino y porcelana suave), eliminando el blanco deslumbrante bajo la luz del consultorio.
+          </p>
+        </div>
         <div className="flex items-center gap-3">
           {[
-            { id: 'light', label: 'Claro', icon: Sun },
+            { id: 'light', label: 'Claro cálido', icon: Sun },
             { id: 'dark', label: 'Oscuro', icon: Moon },
             { id: 'system', label: 'Sistema', icon: Laptop },
           ].map((item) => {

@@ -15,7 +15,7 @@ export interface BatteryStatus {
 export interface RecordingCallbacks {
   onTimeUpdate: (durationSec: number) => void;
   onVuUpdate: (vu: VuData) => void;
-  onChunkSaved: (lastSavedAt: number, totalChunks: number) => void;
+  onChunkSaved: (lastSavedAt: number, totalChunks: number, chunk?: AudioChunk) => void;
   onSilenceWarning: (isSilent: boolean) => void;
   onWakeLockChange: (isActive: boolean) => void;
   onError: (err: Error) => void;
@@ -182,7 +182,7 @@ export class RecordingController {
       durationSec: Math.round(endTime),
     });
 
-    this.callbacks.onChunkSaved?.(this.lastSavedAt, this.chunkIndex);
+    this.callbacks.onChunkSaved?.(this.lastSavedAt, this.chunkIndex, chunk);
   }
 
   private handleVuData(vu: VuData) {

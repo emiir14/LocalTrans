@@ -3,19 +3,23 @@
 
 @layer base {
   :root {
-    --canvas-bg: #FAFAF8;
-    --canvas-surface: #FFFFFF;
-    --canvas-border: rgba(15, 23, 42, 0.08);
+    --canvas-bg: #EDEFEA;
+    --canvas-surface: #F8F9F5;
+    --canvas-surface-subtle: #E4E8DF;
+    --canvas-border: #D3D8CC;
     --brand-teal: #0d9488;
     --brand-teal-hover: #0f766e;
+    color-scheme: light;
   }
 
   .dark {
     --canvas-bg: #090D14;
     --canvas-surface: #111726;
+    --canvas-surface-subtle: #1E293B;
     --canvas-border: rgba(255, 255, 255, 0.08);
     --brand-teal: #14b8a6;
     --brand-teal-hover: #2dd4bf;
+    color-scheme: dark;
   }
 
   html, body {
@@ -23,6 +27,53 @@
     margin: 0;
     padding: 0;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  body {
+    background-color: var(--canvas-bg);
+  }
+}
+
+/* Modo claro antifatiga visual: elimina el blanco puro (#FFFFFF) deslumbrante y adopta una paleta clínica cálida de porcelana y lino (#F8F9F5 sobre #EDEFEA) */
+:root:not(.dark) {
+  /* Tarjetas, modales, barras y menús */
+  .bg-white {
+    background-color: #F8F9F5;
+  }
+  .bg-white\/90 {
+    background-color: rgba(248, 249, 245, 0.92);
+  }
+  .bg-white\/95 {
+    background-color: rgba(248, 249, 245, 0.96);
+  }
+
+  /* Fondos secundarios, inputs, badges y barras de búsqueda */
+  .bg-slate-50 {
+    background-color: #E4E8DF;
+  }
+  .bg-slate-100 {
+    background-color: #DFE3DA;
+  }
+
+  /* Estados hover suaves */
+  .hover\:bg-slate-50:hover {
+    background-color: #EBEFE6;
+  }
+  .hover\:bg-slate-100:hover {
+    background-color: #E2E6DC;
+  }
+
+  /* Bordes cálidos integrados */
+  .border-slate-200,
+  .border-slate-200\/80,
+  .border-slate-200\/60 {
+    border-color: #D3D8CC;
+  }
+  .border-slate-100 {
+    border-color: #DDE2D6;
+  }
+  .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+    border-color: #DDE2D6;
   }
 }
 

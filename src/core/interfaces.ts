@@ -23,6 +23,7 @@ export interface ITranscriptRepository {
   addSegment(segment: TranscriptSegment): Promise<void>;
   saveSegments(segments: TranscriptSegment[]): Promise<void>;
   updateSegment(id: string, text: string): Promise<void>;
+  deleteSegment(id: string): Promise<void>;
   deleteBySessionId(sessionId: string): Promise<void>;
 }
 

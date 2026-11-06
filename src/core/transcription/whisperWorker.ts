@@ -4,6 +4,17 @@ import { pipeline, env } from '@huggingface/transformers';
 env.allowLocalModels = false;
 env.useBrowserCache = true;
 
+// Maximize WASM CPU performance using available hardware threads
+if (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) {
+  try {
+    if ((env as any).backends?.onnx?.wasm) {
+      (env as any).backends.onnx.wasm.numThreads = Math.min(8, navigator.hardwareConcurrency);
+    }
+  } catch {
+    // Ignore if not supported in worker environment
+  }
+}
+
 let transcriber: any = null;
 let currentModelId = '';
 let currentDevice: 'webgpu' | 'wasm' = 'wasm';
@@ -93,17 +104,15 @@ self.onmessage = async (event: MessageEvent) => {
         const floatAudio = new Float32Array(samples);
         const durationSec = floatAudio.length / 16000;
 
+        // Ultra-fast greedy decoding without cross-attention alignment overhead
         const options: any = {
           language: 'es',
           task: 'transcribe',
-          return_timestamps: true,
+          return_timestamps: false,
+          temperature: 0.0,
+          num_beams: 1,
+          max_new_tokens: 128,
         };
-
-        // Only add chunking if the segment itself is longer than 30s
-        if (durationSec > 30) {
-          options.chunk_length_s = 30;
-          options.stride_length_s = 5;
-        }
 
         if (initialPrompt) {
           options.initial_prompt = initialPrompt;
@@ -119,7 +128,6 @@ self.onmessage = async (event: MessageEvent) => {
             endSec,
             durationSec,
             text: (output.text || '').trim(),
-            chunks: output.chunks || [],
           },
         });
         break;

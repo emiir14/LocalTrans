@@ -86,6 +86,7 @@ export interface AppSettings {
   noiseSuppression: boolean;
   requireConsent: boolean;
   autoTranscribeOnStop: boolean;
+  progressiveTranscription: boolean; // Transcribes chunks in background during recording for instant results
   theme: 'light' | 'dark' | 'system';
   updatedAt: number;
 }

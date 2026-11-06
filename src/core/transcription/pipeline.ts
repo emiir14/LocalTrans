@@ -9,7 +9,7 @@ import {
 } from '../interfaces';
 import { formatTimeDisplay } from '../export/formatter';
 import { ModelTier, TranscriptSegment } from '../types';
-import { WhisperTranscriptionEngine } from './engine';
+import { getSharedWhisperEngine, WhisperTranscriptionEngine } from './engine';
 import { ClinicalAudioSegmenter } from './vad';
 
 export interface PipelineProgress {
@@ -40,7 +40,7 @@ export class TranscriptionPipeline {
     private settingsRepo: ISettingsRepository,
     options: { onCorruptionFallback?: (reason: string) => void } = {}
   ) {
-    this.engine = new WhisperTranscriptionEngine({
+    this.engine = getSharedWhisperEngine({
       onCorruptionFallback: options.onCorruptionFallback,
     });
   }
@@ -135,22 +135,47 @@ export class TranscriptionPipeline {
     const initialPrompt =
       'Consulta odontológica en español latino. Términos: conductometría, endodoncia, amalgama, obturación, periodonto, composite, carilla, oclusal, mesial, distal.';
 
-    // 6. Check existing segments to support resumption
+    // 6. Check existing segments to support resumption & progressive pre-transcription
     const existingSegments = await this.transcriptRepo.getBySessionId(sessionId);
-    const completedEndTimes = new Set(existingSegments.map((s) => Math.round(s.end * 10) / 10));
 
+    const isSegmentAlreadyCovered = (seg: { startSec: number; endSec: number }) => {
+      return existingSegments.some((ex) => {
+        const overlapStart = Math.max(seg.startSec, ex.start);
+        const overlapEnd = Math.min(seg.endSec, ex.end);
+        const overlap = overlapEnd - overlapStart;
+        const segDuration = seg.endSec - seg.startSec;
+        return overlap > 0.5 || (segDuration > 0 && overlap / segDuration > 0.5);
+      });
+    };
+
+    const remainingSegments = speechSegments.filter((seg) => !isSegmentAlreadyCovered(seg));
     const allSegments: TranscriptSegment[] = [...existingSegments];
+
+    // If 100% of segments were already processed in background during recording
+    if (remainingSegments.length === 0 && existingSegments.length > 0) {
+      await this.sessionRepo.update(sessionId, { status: 'completed' });
+      onProgress?.({
+        sessionId,
+        percent: 100,
+        currentSegment: speechSegments.length,
+        totalSegments: speechSegments.length,
+        estimatedRemainingSec: 0,
+        statusText: 'Transcripción completada al instante (procesada en tiempo real)',
+        activeBackend: this.engine.getActiveBackend(),
+        activeTier: this.engine.getActiveTier(),
+      });
+      return allSegments.sort((a, b) => a.start - b.start);
+    }
+
     const startTimeMs = Date.now();
     let transcribedCount = 0;
-    const remainingToTranscribe = speechSegments.filter(
-      (seg) => !completedEndTimes.has(Math.round(seg.endSec * 10) / 10)
-    ).length;
+    const remainingToTranscribe = remainingSegments.length;
 
     let previousText = existingSegments.length > 0 ? existingSegments[existingSegments.length - 1].text : '';
 
     const logs: string[] = [];
-    logs.push(`VAD completado: ${speechSegments.length} fragmentos de voz detectados en el audio`);
-    logs.push(`Iniciando transcripción con motor local (${this.engine.getActiveBackend().toUpperCase()})`);
+    logs.push(`VAD completado: ${speechSegments.length} fragmentos de voz (${existingSegments.length} ya pre-transcritos)`);
+    logs.push(`Iniciando motor de transcripción local (${this.engine.getActiveBackend().toUpperCase()})`);
 
     // 7. Transcribe segment by segment
     for (let i = 0; i < speechSegments.length; i++) {
@@ -160,10 +185,9 @@ export class TranscriptionPipeline {
       }
 
       const speechSeg = speechSegments[i];
-      const roundedEnd = Math.round(speechSeg.endSec * 10) / 10;
 
       // Skip already transcribed segments
-      if (completedEndTimes.has(roundedEnd)) {
+      if (isSegmentAlreadyCovered(speechSeg)) {
         continue;
       }
 
