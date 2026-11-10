@@ -47,10 +47,9 @@ export const DetailView: React.FC = () => {
     transcriptionProgress,
     transcriptionFallbackNotice,
     updateSegmentText,
-    deleteTranscriptSegment,
-    deleteTranscriptForSession,
     deleteSession,
     deleteAudioForSession,
+    openConfirm,
     showToast,
   } = useAppStore();
 
@@ -330,13 +329,14 @@ export const DetailView: React.FC = () => {
           {/* Delete Consultation Button */}
           <button
             onClick={() => {
-              if (
-                window.confirm(
-                  `¿Eliminar definitivamente la consulta "${activeSession.reference || activeSession.title}"? Esta acción borrará la grabación de audio y toda la transcripción de tu dispositivo.`
-                )
-              ) {
-                deleteSession(activeSession.id);
-              }
+              openConfirm({
+                title: '¿Eliminar consulta?',
+                description: `Se eliminará permanentemente la consulta "${activeSession.reference || activeSession.title}", incluyendo la grabación de audio y su transcripción de este equipo.`,
+                confirmText: 'Eliminar consulta',
+                cancelText: 'Cancelar',
+                isDestructive: true,
+                onConfirm: () => deleteSession(activeSession.id),
+              });
             }}
             className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-slate-200 dark:border-slate-800 transition-colors min-h-[40px]"
             title="Eliminar consulta y transcripción"
@@ -584,15 +584,20 @@ export const DetailView: React.FC = () => {
                 <span>Gestión de datos locales</span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Esta consulta y su texto residen exclusivamente en este navegador. Puedes liberar espacio o borrar partes en cualquier momento.
+                Esta consulta y su texto residen exclusivamente en este navegador. Puedes liberar espacio borrando el audio original o eliminar la consulta por completo.
               </p>
               <div className="space-y-2 pt-1">
                 {!activeSession.audioDeleted && (
                   <button
                     onClick={() => {
-                      if (window.confirm('¿Segura que querés borrar el audio de esta consulta? El texto de la transcripción se conservará intacto.')) {
-                        deleteAudioForSession(activeSession.id);
-                      }
+                      openConfirm({
+                        title: '¿Borrar archivo de audio?',
+                        description: 'Se liberará el espacio de almacenamiento del audio en tu dispositivo (~115 MB/hora). La transcripción de texto se conservará intacta.',
+                        confirmText: 'Borrar solo audio',
+                        cancelText: 'Cancelar',
+                        isDestructive: false,
+                        onConfirm: () => deleteAudioForSession(activeSession.id),
+                      });
                     }}
                     className="w-full py-2.5 px-3 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-2 min-h-[40px]"
                   >
@@ -601,25 +606,16 @@ export const DetailView: React.FC = () => {
                   </button>
                 )}
 
-                {activeTranscript.length > 0 && (
-                  <button
-                    onClick={() => {
-                      if (window.confirm('¿Borrar el texto de la transcripción de esta consulta? Si el audio sigue guardado, podrás volver a transcribirla cuando quieras.')) {
-                        deleteTranscriptForSession(activeSession.id);
-                      }
-                    }}
-                    className="w-full py-2.5 px-3 rounded-xl text-xs font-medium text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/40 border border-amber-200 dark:border-amber-900/60 transition-colors flex items-center justify-center gap-2 min-h-[40px]"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Borrar solo el texto de transcripción</span>
-                  </button>
-                )}
-
                 <button
                   onClick={() => {
-                    if (window.confirm(`¿Eliminar por completo la consulta "${activeSession.reference || activeSession.title}"? Se borrará tanto el audio como la transcripción de tu equipo.`)) {
-                      deleteSession(activeSession.id);
-                    }
+                    openConfirm({
+                      title: '¿Eliminar consulta completa?',
+                      description: `Se eliminarán permanentemente el audio y la transcripción de "${activeSession.reference || activeSession.title}". Esta acción no se puede deshacer.`,
+                      confirmText: 'Eliminar consulta',
+                      cancelText: 'Cancelar',
+                      isDestructive: true,
+                      onConfirm: () => deleteSession(activeSession.id),
+                    });
                   }}
                   className="w-full py-2.5 px-3 rounded-xl text-xs font-medium text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 border border-rose-200 dark:border-rose-900/60 transition-colors flex items-center justify-center gap-2 min-h-[40px]"
                 >
@@ -721,32 +717,18 @@ export const DetailView: React.FC = () => {
                           )}
                         </div>
 
-                        {/* Edit & Delete Segment Buttons */}
+                        {/* Edit Button */}
                         {!isEditing && (
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                startEdit(segment);
-                              }}
-                              className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-                              title="Editar segmento"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (window.confirm('¿Borrar este fragmento de la transcripción?')) {
-                                  deleteTranscriptSegment(segment.id);
-                                }
-                              }}
-                              className="p-1 rounded-md text-slate-400 hover:text-rose-600 dark:hover:text-rose-400"
-                              title="Borrar fragmento"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startEdit(segment);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-opacity"
+                            title="Editar segmento"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
                         )}
                       </div>
 

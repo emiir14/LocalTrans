@@ -26,10 +26,6 @@ export class LocalTranscriptRepository implements ITranscriptRepository {
     });
   }
 
-  public async deleteSegment(id: string): Promise<void> {
-    await db.transcriptSegments.delete(id);
-  }
-
   public async deleteBySessionId(sessionId: string): Promise<void> {
     await db.transcriptSegments.where('sessionId').equals(sessionId).delete();
   }

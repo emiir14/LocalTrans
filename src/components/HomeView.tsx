@@ -22,6 +22,7 @@ export const HomeView: React.FC = () => {
     setView,
     startRecording,
     deleteSession,
+    openConfirm,
     unclosedSession,
     recoverRecording,
     dismissRecovery,
@@ -196,7 +197,16 @@ export const HomeView: React.FC = () => {
               key={session.id}
               session={session}
               onClick={() => setView('detail', session.id)}
-              onDelete={() => deleteSession(session.id)}
+              onDelete={() => {
+                openConfirm({
+                  title: '¿Eliminar consulta?',
+                  description: `Se eliminará permanentemente la consulta "${session.reference || session.title}", incluyendo la grabación de audio y su transcripción de este equipo.`,
+                  confirmText: 'Eliminar consulta',
+                  cancelText: 'Cancelar',
+                  isDestructive: true,
+                  onConfirm: () => deleteSession(session.id),
+                });
+              }}
             />
           ))}
         </div>
@@ -395,13 +405,7 @@ const SessionRow: React.FC<{
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            if (
-              window.confirm(
-                `¿Eliminar la consulta "${session.reference || session.title}"? Se borrará tanto la grabación de audio como la transcripción de este equipo.`
-              )
-            ) {
-              onDelete();
-            }
+            onDelete();
           }}
           className="p-2 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center"
           title="Eliminar consulta"

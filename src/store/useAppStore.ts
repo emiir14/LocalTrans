@@ -62,7 +62,7 @@ class BackgroundChunkTranscriber {
 
       const glossaryEntries = await glossaryRepo.getAll(workspaceId);
       const initialPrompt =
-        'Consulta odontológica en español latino. Términos: conductometría, endodoncia, amalgama, obturación, periodonto, composite, carilla, oclusal, mesial, distal.';
+        'Consulta odontológica en español. Términos: conductometría, endodoncia, amalgama, obturación, periodonto, composite, carilla, oclusal, mesial, distal, vestibular, palatino, periapical, gutapercha, raspaje, exodoncia, implante, prótesis, anestesia, tartrectomía, bruxismo.';
 
       for (let i = 0; i < speechSegments.length; i++) {
         const seg = speechSegments[i];
@@ -171,8 +171,6 @@ interface AppState {
   startTranscription: (sessionId: string) => Promise<void>;
   cancelTranscription: () => void;
   updateSegmentText: (segmentId: string, newText: string) => Promise<void>;
-  deleteTranscriptSegment: (segmentId: string) => Promise<void>;
-  deleteTranscriptForSession: (sessionId: string) => Promise<void>;
   deleteSession: (sessionId: string) => Promise<void>;
   deleteAudioForSession: (sessionId: string) => Promise<void>;
   clearTranscribedAudioAll: () => Promise<void>;
@@ -183,6 +181,20 @@ interface AppState {
   importAudioFile: (file: File, reference?: string) => Promise<void>;
   showToast: (text: string, type?: 'info' | 'success' | 'warning') => void;
   closeOnboarding: () => void;
+
+  // Global Confirm Dialog
+  confirmDialog: ConfirmDialogConfig | null;
+  openConfirm: (config: ConfirmDialogConfig) => void;
+  closeConfirm: () => void;
+}
+
+export interface ConfirmDialogConfig {
+  title: string;
+  description: string;
+  confirmText?: string;
+  cancelText?: string;
+  isDestructive?: boolean;
+  onConfirm: () => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -216,6 +228,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   showOnboarding: false,
   toastMessage: null,
   storageUsage: { usedBytes: 0, quotaBytes: 0 },
+  confirmDialog: null,
 
   init: async () => {
     const ws = await authProvider.getCurrentWorkspace();
@@ -571,25 +584,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ activeTranscript: active });
   },
 
-  deleteTranscriptSegment: async (segmentId: string) => {
-    await transcriptRepo.deleteSegment(segmentId);
-    set((state) => ({
-      activeTranscript: state.activeTranscript.filter((s) => s.id !== segmentId),
-    }));
-    get().showToast('Fragmento eliminado', 'info');
-  },
-
-  deleteTranscriptForSession: async (sessionId: string) => {
-    await transcriptRepo.deleteBySessionId(sessionId);
-    await sessionRepo.update(sessionId, { status: 'recorded' });
-    if (get().currentSessionId === sessionId) {
-      set({ activeTranscript: [] });
-      await get().loadSessionDetail(sessionId);
-    }
-    await get().loadSessions();
-    get().showToast('Transcripción eliminada. El audio original se conserva.', 'info');
-  },
-
   deleteSession: async (sessionId: string) => {
     await audioStore.deleteAudio(sessionId);
     await transcriptRepo.deleteBySessionId(sessionId);
@@ -709,6 +703,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   closeOnboarding: () => {
     localStorage.setItem('escriba_onboarding_done', 'true');
     set({ showOnboarding: false });
+  },
+
+  openConfirm: (config) => {
+    set({ confirmDialog: config });
+  },
+
+  closeConfirm: () => {
+    set({ confirmDialog: null });
   },
 }));
 

@@ -32,6 +32,7 @@ export const RecordingView: React.FC = () => {
     nextPatient,
     stopRecording,
     discardRecording,
+    openConfirm,
     storageUsage,
   } = useAppStore();
 
@@ -186,9 +187,14 @@ export const RecordingView: React.FC = () => {
         {/* Discard button */}
         <button
           onClick={() => {
-            if (window.confirm('¿Segura que querés descartar y eliminar esta grabación?')) {
-              discardRecording();
-            }
+            openConfirm({
+              title: '¿Descartar grabación?',
+              description: 'Se cancelará la captura de audio y se eliminarán los fragmentos temporales de esta consulta. Esta acción no se puede deshacer.',
+              confirmText: 'Descartar grabación',
+              cancelText: 'Continuar grabando',
+              isDestructive: true,
+              onConfirm: () => discardRecording(),
+            });
           }}
           className="w-full sm:w-auto px-3.5 py-3 rounded-2xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors flex items-center justify-center gap-1.5 min-h-[48px]"
         >

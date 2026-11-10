@@ -26,6 +26,7 @@ export const SettingsView: React.FC = () => {
     storageUsage,
     clearTranscribedAudioAll,
     clearAllData,
+    openConfirm,
   } = useAppStore();
 
   const [hardware, setHardware] = useState<HardwareCapabilities | null>(null);
@@ -425,9 +426,14 @@ export const SettingsView: React.FC = () => {
         <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
           <button
             onClick={() => {
-              if (window.confirm('¿Borrar los audios de todas las sesiones que ya han sido transcritas? Las notas y textos permanecerán intactos.')) {
-                clearTranscribedAudioAll();
-              }
+              openConfirm({
+                title: '¿Liberar audio de consultas listas?',
+                description: 'Se borrarán los archivos de audio de todas las consultas que ya fueron transcritas para liberar espacio en disco. Las notas y transcripciones permanecerán intactas.',
+                confirmText: 'Liberar audio',
+                cancelText: 'Cancelar',
+                isDestructive: false,
+                onConfirm: () => clearTranscribedAudioAll(),
+              });
             }}
             className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
           >
@@ -436,9 +442,14 @@ export const SettingsView: React.FC = () => {
 
           <button
             onClick={() => {
-              if (window.confirm('¿ADVERTENCIA: Deseas borrar TODOS los datos locales (grabaciones, transcripciones y base de datos) de este navegador?')) {
-                clearAllData();
-              }
+              openConfirm({
+                title: '¿Borrar TODOS los datos locales?',
+                description: 'Esta acción eliminará de forma irreversible todas las grabaciones, transcripciones, glosarios y ajustes almacenados en este navegador. Se recomienda exportar tus consultas antes de proceder.',
+                confirmText: 'Borrar todo',
+                cancelText: 'Cancelar',
+                isDestructive: true,
+                onConfirm: () => clearAllData(),
+              });
             }}
             className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-900/60 transition-colors"
           >

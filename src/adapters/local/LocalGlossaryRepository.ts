@@ -28,18 +28,26 @@ export class LocalGlossaryRepository implements IGlossaryRepository {
   }
 
   public async seedDefaultsIfEmpty(workspaceId: string): Promise<void> {
-    const count = await db.glossary.where('workspaceId').equals(workspaceId).count();
-    if (count === 0) {
-      const now = Date.now();
-      const entries: GlossaryEntry[] = DEFAULT_DENTAL_GLOSSARY.map((g, idx) => ({
-        id: `glossary_${idx}_${now}`,
-        workspaceId,
-        incorrect: g.incorrect,
-        correct: g.correct,
-        createdAt: now,
-        updatedAt: now,
-      }));
-      await db.glossary.bulkPut(entries);
+    const existing = await db.glossary.where('workspaceId').equals(workspaceId).toArray();
+    const existingSet = new Set(existing.map((e) => e.incorrect.toLowerCase().trim()));
+    const now = Date.now();
+    const toAdd: GlossaryEntry[] = [];
+
+    DEFAULT_DENTAL_GLOSSARY.forEach((g, idx) => {
+      if (!existingSet.has(g.incorrect.toLowerCase().trim())) {
+        toAdd.push({
+          id: `glossary_${idx}_${now}`,
+          workspaceId,
+          incorrect: g.incorrect,
+          correct: g.correct,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+    });
+
+    if (toAdd.length > 0) {
+      await db.glossary.bulkPut(toAdd);
     }
   }
 }

@@ -17,6 +17,17 @@ describe('Dental Glossary Post-Processing', () => {
     expect(output).toBe('Conductometría en la pieza 2.4.');
   });
 
+  it('should replace misheard dental terminology with correct forms across specialties', () => {
+    const input = 'Realizamos pulpec tomía y obturación con guta percha, tartago supragingival con sin civitis y sutura vicryl.';
+    const output = applyGlossary(input, DEFAULT_DENTAL_GLOSSARY);
+
+    expect(output).toContain('pulpectomía');
+    expect(output).toContain('gutapercha');
+    expect(output).toContain('tártaro');
+    expect(output).toContain('gingivitis');
+    expect(output).toContain('sutura Vicryl');
+  });
+
   it('should not alter text without matching glossary items', () => {
     const input = 'Paciente sin antecedentes patológicos relevantes.';
     const output = applyGlossary(input, DEFAULT_DENTAL_GLOSSARY);

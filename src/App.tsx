@@ -5,6 +5,7 @@
 
 import React, { useEffect } from 'react';
 import { BenchmarkView } from './components/BenchmarkView';
+import { ConfirmModal } from './components/ConfirmModal';
 import { DetailView } from './components/DetailView';
 import { HomeView } from './components/HomeView';
 import { OnboardingModal } from './components/OnboardingModal';
@@ -60,8 +61,9 @@ export default function App() {
         {currentView === 'benchmark' && <BenchmarkView />}
       </main>
 
-      {/* First-use modal & notification toast */}
+      {/* First-use modal, confirm dialog & notification toast */}
       <OnboardingModal />
+      <ConfirmModal />
       <Toast />
     </div>
   );
