@@ -7,6 +7,7 @@ const DEFAULT_SETTINGS: (workspaceId: string) => AppSettings = (workspaceId) => 
   workspaceId,
   modelTier: 'auto',
   noiseSuppression: false, // Turned off by default as requested in prompt to preserve voice frequencies
+  selectedAudioDeviceId: undefined,
   requireConsent: true,
   autoTranscribeOnStop: false,
   progressiveTranscription: true,

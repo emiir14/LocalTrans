@@ -53,15 +53,24 @@ export function isHallucination(text: string): boolean {
     return true;
   }
 
-  // Check for phrase looping (e.g., "y entonces y entonces y entonces")
+  // Check for sliding-window n-gram loops anywhere in the sentence (1 to 5 word patterns)
   const words = normalized.split(/\s+/).filter(Boolean);
   if (words.length >= 6) {
-    // Check if 2 or 3 word n-gram repeats consecutively 3+ times
-    for (let n = 2; n <= 4; n++) {
-      if (words.length >= n * 3) {
-        const pattern = words.slice(0, n).join(' ');
-        const second = words.slice(n, n * 2).join(' ');
-        const third = words.slice(n * 2, n * 3).join(' ');
+    // 1. Unique word ratio check: repetitive loop degenerate text has very few unique words
+    if (words.length >= 10) {
+      const uniqueWords = new Set(words);
+      const diversity = uniqueWords.size / words.length;
+      if (diversity < 0.4) {
+        return true;
+      }
+    }
+
+    // 2. Sliding window check: detects repetition starting at any offset
+    for (let n = 1; n <= 5; n++) {
+      for (let i = 0; i <= words.length - n * 3; i++) {
+        const pattern = words.slice(i, i + n).join(' ');
+        const second = words.slice(i + n, i + n * 2).join(' ');
+        const third = words.slice(i + n * 2, i + n * 3).join(' ');
         if (pattern === second && second === third) {
           return true;
         }

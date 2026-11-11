@@ -349,6 +349,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const settings = get().settings;
     await controller.startRecording(newSession, {
       noiseSuppression: settings?.noiseSuppression ?? false,
+      audioDeviceId: settings?.selectedAudioDeviceId,
     });
 
     set({

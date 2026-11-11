@@ -74,7 +74,7 @@ export const DetailView: React.FC = () => {
   // Auto-scroll to latest segment as new chunks stream in
   useEffect(() => {
     if (isTranscribingThisSession && autoScroll && transcriptBottomRef.current) {
-      transcriptBottomRef.current.scrollIntoView({ behavior: 'smooth' });
+      transcriptBottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }, [activeTranscript.length, isTranscribingThisSession, autoScroll]);
 
@@ -357,8 +357,8 @@ export const DetailView: React.FC = () => {
 
       {/* Main 2-Column Responsive Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column: Audio Player & Action Controls (4 cols on lg) */}
-        <div className="lg:col-span-5 space-y-6">
+        {/* Left Column: Audio Player & Action Controls (5 cols on lg) */}
+        <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-6 self-start">
           {/* Synchronized Audio Player Card */}
           {!activeSession.audioDeleted && audioUrl ? (
             <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-4">
@@ -673,9 +673,9 @@ export const DetailView: React.FC = () => {
           </div>
 
           {/* Transcript Segments List */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs p-6 space-y-4 min-h-[420px]">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs p-5 sm:p-6 min-h-[420px] flex flex-col">
             {filteredSegments.length > 0 ? (
-              <>
+              <div className="max-h-[calc(100vh-270px)] min-h-[400px] overflow-y-auto pr-2.5 scrollbar-thin space-y-4">
                 {filteredSegments.map((segment, idx) => {
                   const isActive = idx === activeSegmentIndex;
                   const isEditing = editingSegmentId === segment.id;
@@ -791,7 +791,7 @@ export const DetailView: React.FC = () => {
                   </div>
                 )}
                 <div ref={transcriptBottomRef} />
-              </>
+              </div>
             ) : isTranscribingThisSession ? (
               <div className="py-16 px-4 text-center space-y-4">
                 <div className="relative inline-flex items-center justify-center">

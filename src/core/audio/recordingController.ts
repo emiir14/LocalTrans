@@ -57,7 +57,7 @@ export class RecordingController {
 
   public async startRecording(
     session: Session,
-    options: { noiseSuppression?: boolean } = {}
+    options: { noiseSuppression?: boolean; audioDeviceId?: string } = {}
   ): Promise<void> {
     if (this.isRecording) {
       throw new Error('Ya hay una grabación en curso');
@@ -72,15 +72,39 @@ export class RecordingController {
 
     // 1. Get user media with explicit medical-recording constraints
     // Echo cancellation and AGC are off to preserve true acoustics and dynamic range.
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: false,
-        autoGainControl: false,
-        noiseSuppression: options.noiseSuppression ?? false,
-        channelCount: 1,
-      },
-      video: false,
-    });
+    const audioConstraints: MediaTrackConstraints = {
+      echoCancellation: false,
+      autoGainControl: false,
+      noiseSuppression: options.noiseSuppression ?? false,
+      channelCount: 1,
+    };
+
+    if (options.audioDeviceId) {
+      audioConstraints.deviceId = { exact: options.audioDeviceId };
+    }
+
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: audioConstraints,
+        video: false,
+      });
+    } catch {
+      // If exact deviceId fails (e.g. unplugged Bluetooth or external headset), fallback to default audio device
+      if (options.audioDeviceId) {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: false,
+            autoGainControl: false,
+            noiseSuppression: options.noiseSuppression ?? false,
+            channelCount: 1,
+          },
+          video: false,
+        });
+      } else {
+        throw new Error('No se pudo acceder al micrófono');
+      }
+    }
     this.mediaStream = stream;
 
     // 2. Initialize AudioContext (prefer 16000Hz, fall back to native device rate)
@@ -98,6 +122,13 @@ export class RecordingController {
     await ctx.audioWorklet.addModule('/recorder-worklet.js');
 
     this.sourceNode = ctx.createMediaStreamSource(stream);
+
+    // Highpass filter (80Hz) to remove mechanical desk thumps, low HVAC rumble, and mic contact pops
+    const highpass = ctx.createBiquadFilter();
+    highpass.type = 'highpass';
+    highpass.frequency.value = 80;
+    highpass.Q.value = 0.7;
+
     this.workletNode = new AudioWorkletNode(ctx, 'pcm-recorder-processor');
 
     // Handle messages from the worklet
@@ -110,7 +141,8 @@ export class RecordingController {
       }
     };
 
-    this.sourceNode.connect(this.workletNode);
+    this.sourceNode.connect(highpass);
+    highpass.connect(this.workletNode);
     // Connect to a dummy gain to keep the graph alive without feeding audio to speakers
     const silentGain = ctx.createGain();
     silentGain.gain.value = 0;

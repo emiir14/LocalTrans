@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Cpu,
   Mic,
@@ -11,6 +11,9 @@ import {
   Sun,
   Moon,
   Laptop,
+  RotateCw,
+  Radio,
+  Volume2,
 } from 'lucide-react';
 import { detectHardwareCapabilities, HardwareCapabilities } from '../core/transcription/tierDetector';
 import { ModelTier } from '../core/types';
@@ -27,6 +30,7 @@ export const SettingsView: React.FC = () => {
     clearTranscribedAudioAll,
     clearAllData,
     openConfirm,
+    showToast,
   } = useAppStore();
 
   const [hardware, setHardware] = useState<HardwareCapabilities | null>(null);
@@ -34,9 +38,142 @@ export const SettingsView: React.FC = () => {
   const [newCorrect, setNewCorrect] = useState('');
   const [isAddingGlossary, setIsAddingGlossary] = useState(false);
 
+  // Audio Device Enumeration & Mic Level Test
+  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
+  const [isTestingMic, setIsTestingMic] = useState(false);
+  const [testVuLevel, setTestVuLevel] = useState(0);
+
+  const testStreamRef = useRef<MediaStream | null>(null);
+  const testContextRef = useRef<AudioContext | null>(null);
+  const testAnimFrameRef = useRef<number | null>(null);
+
+  const loadAudioDevices = async () => {
+    if (typeof navigator !== 'undefined' && navigator.mediaDevices?.enumerateDevices) {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const inputs = devices.filter((d) => d.kind === 'audioinput');
+        setAudioDevices(inputs);
+      } catch {
+        // ignore
+      }
+    }
+  };
+
   useEffect(() => {
     detectHardwareCapabilities().then(setHardware);
+    loadAudioDevices();
+
+    const handleDeviceChange = () => {
+      loadAudioDevices();
+    };
+
+    navigator.mediaDevices?.addEventListener('devicechange', handleDeviceChange);
+    return () => {
+      navigator.mediaDevices?.removeEventListener('devicechange', handleDeviceChange);
+      stopMicTest();
+    };
   }, []);
+
+  const handleRefreshDevices = async () => {
+    try {
+      // Trigger a brief permission request to expose device labels if browser has them hidden
+      const tempStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      tempStream.getTracks().forEach((t) => t.stop());
+    } catch {
+      // ignore
+    }
+    await loadAudioDevices();
+    showToast('Lista de micrófonos actualizada', 'info');
+  };
+
+  const stopMicTest = () => {
+    if (testAnimFrameRef.current) {
+      cancelAnimationFrame(testAnimFrameRef.current);
+      testAnimFrameRef.current = null;
+    }
+    if (testStreamRef.current) {
+      testStreamRef.current.getTracks().forEach((t) => t.stop());
+      testStreamRef.current = null;
+    }
+    if (testContextRef.current && testContextRef.current.state !== 'closed') {
+      try {
+        testContextRef.current.close();
+      } catch {
+        // ignore
+      }
+      testContextRef.current = null;
+    }
+    setIsTestingMic(false);
+    setTestVuLevel(0);
+  };
+
+  const toggleMicTest = async () => {
+    if (isTestingMic) {
+      stopMicTest();
+      return;
+    }
+
+    try {
+      const audioConstraints: MediaTrackConstraints = {
+        echoCancellation: false,
+        autoGainControl: false,
+        noiseSuppression: settings?.noiseSuppression ?? false,
+      };
+      if (settings?.selectedAudioDeviceId) {
+        audioConstraints.deviceId = { exact: settings.selectedAudioDeviceId };
+      }
+
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: audioConstraints,
+          video: false,
+        });
+      } catch {
+        if (settings?.selectedAudioDeviceId) {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: false,
+              autoGainControl: false,
+              noiseSuppression: settings?.noiseSuppression ?? false,
+            },
+            video: false,
+          });
+        } else {
+          throw new Error('No se pudo acceder al micrófono');
+        }
+      }
+
+      testStreamRef.current = stream;
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      testContextRef.current = audioCtx;
+
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 512;
+      source.connect(analyser);
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      setIsTestingMic(true);
+
+      const checkLevel = () => {
+        if (!testContextRef.current) return;
+        analyser.getByteTimeDomainData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          const val = (dataArray[i] - 128) / 128;
+          sum += val * val;
+        }
+        const rms = Math.sqrt(sum / dataArray.length);
+        setTestVuLevel(Math.min(1, rms * 4.5));
+        testAnimFrameRef.current = requestAnimationFrame(checkLevel);
+      };
+      checkLevel();
+    } catch {
+      stopMicTest();
+      showToast('No se pudo iniciar la prueba del micrófono', 'warning');
+    }
+  };
 
   const handleTierChange = async (tier: ModelTier) => {
     await updateSettings({ modelTier: tier });
@@ -163,8 +300,101 @@ export const SettingsView: React.FC = () => {
         </div>
 
         <div className="space-y-4 pt-1 divide-y divide-slate-100 dark:divide-slate-800">
+          {/* Audio Input Device Selector */}
+          <div className="pt-2 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <div className="text-xs font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                  <span>Dispositivo de micrófono de entrada</span>
+                  {settings?.selectedAudioDeviceId && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-teal-100 dark:bg-teal-900/50 text-teal-800 dark:text-teal-200 font-medium">
+                      Personalizado
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Elige qué micrófono utilizar (auriculares Bluetooth, micrófono de escritorio o micrófono integrado).
+                </p>
+              </div>
+
+              {/* Refresh devices button */}
+              <button
+                type="button"
+                onClick={handleRefreshDevices}
+                className="self-start sm:self-auto px-2.5 py-1 text-[11px] font-medium rounded-lg text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center gap-1.5 transition-colors"
+                title="Actualizar lista de micrófonos conectados"
+              >
+                <RotateCw className="w-3 h-3 text-slate-500" />
+                <span>Actualizar dispositivos</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+              <div className="sm:col-span-2">
+                <select
+                  value={settings?.selectedAudioDeviceId || ''}
+                  onChange={(e) => updateSettings({ selectedAudioDeviceId: e.target.value || undefined })}
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-teal-500 font-medium"
+                >
+                  <option value="">Predeterminado del sistema / navegador</option>
+                  {audioDevices.map((dev, idx) => (
+                    <option key={dev.deviceId || idx} value={dev.deviceId}>
+                      {dev.label || `Micrófono ${idx + 1}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Quick mic test button & vu meter */}
+              <div>
+                <button
+                  type="button"
+                  onClick={toggleMicTest}
+                  className={`w-full px-3 py-2 text-xs font-semibold rounded-xl border transition-colors flex items-center justify-center gap-2 ${
+                    isTestingMic
+                      ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300'
+                      : 'bg-teal-50/70 dark:bg-teal-950/40 border-teal-200 dark:border-teal-800/80 text-teal-800 dark:text-teal-200 hover:bg-teal-100 dark:hover:bg-teal-900/50'
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${isTestingMic ? 'bg-rose-500 animate-ping' : 'bg-teal-500'}`} />
+                  <span>{isTestingMic ? 'Detener prueba' : 'Probar nivel'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Live VU meter when testing */}
+            {isTestingMic && (
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-300">
+                  <span className="font-medium flex items-center gap-1.5">
+                    <Radio className="w-3.5 h-3.5 text-teal-600 animate-pulse" />
+                    <span>Nivel captado por el micrófono:</span>
+                  </span>
+                  <span className="font-mono font-bold text-teal-600">{Math.round(testVuLevel * 100)}%</span>
+                </div>
+                <div className="h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-75 rounded-full ${
+                      testVuLevel > 0.7
+                        ? 'bg-amber-500'
+                        : testVuLevel > 0.05
+                        ? 'bg-teal-500'
+                        : 'bg-slate-400'
+                    }`}
+                    style={{ width: `${Math.min(100, Math.max(2, testVuLevel * 100))}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                  {testVuLevel < 0.03
+                    ? 'Hablá hacia el micrófono. Si la barra no responde, verificá que los auriculares no estén silenciados o probá otro dispositivo de la lista.'
+                    : 'Nivel óptimo detectado. Tu voz está llegando con buena amplitud.'}
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Noise Suppression Toggle */}
-          <div className="flex items-center justify-between gap-4 pt-2">
+          <div className="flex items-center justify-between gap-4 pt-4">
             <div>
               <div className="text-xs font-semibold text-slate-900 dark:text-slate-100">
                 Supresión de ruido por hardware del navegador

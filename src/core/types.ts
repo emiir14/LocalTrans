@@ -84,6 +84,7 @@ export interface AppSettings {
   workspaceId: string;
   modelTier: ModelTier;
   noiseSuppression: boolean;
+  selectedAudioDeviceId?: string;
   requireConsent: boolean;
   autoTranscribeOnStop: boolean;
   progressiveTranscription: boolean; // Transcribes chunks in background during recording for instant results

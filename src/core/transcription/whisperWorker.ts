@@ -104,7 +104,7 @@ self.onmessage = async (event: MessageEvent) => {
         const floatAudio = new Float32Array(samples);
         const durationSec = floatAudio.length / 16000;
 
-        // Ultra-fast greedy decoding without cross-attention alignment overhead
+        // Ultra-fast greedy decoding with anti-repetition and noise thresholding
         const options: any = {
           language: 'es',
           task: 'transcribe',
@@ -112,6 +112,9 @@ self.onmessage = async (event: MessageEvent) => {
           temperature: 0.0,
           num_beams: 1,
           max_new_tokens: 128,
+          repetition_penalty: 1.2,
+          no_speech_threshold: 0.6,
+          compression_ratio_threshold: 2.4,
         };
 
         if (initialPrompt) {

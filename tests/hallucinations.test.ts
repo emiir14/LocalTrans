@@ -14,6 +14,12 @@ describe('Hallucination Filters', () => {
   it('should detect character repetition and looping hallucinations', () => {
     expect(isHallucination('aaaaaaaaaaaa')).toBe(true);
     expect(isHallucination('y entonces y entonces y entonces y entonces')).toBe(true);
+    // User's exact case caused by distant audio / low SNR
+    expect(
+      isHallucination(
+        '¡Vamos a ver la tienda de la tienda! ¡Vamos a ver la tienda de la tienda de la tienda de la tienda de la tienda de la tienda de la tienda de la tienda de la tienda de la tienda de la tienda de la tienda de la tienda'
+      )
+    ).toBe(true);
   });
 
   it('should not flag valid dental dialogue', () => {

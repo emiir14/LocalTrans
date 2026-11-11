@@ -169,17 +169,40 @@ export class ClinicalAudioSegmenter {
       intervals.push(interval);
     }
 
-    // If no distinct voice was separated, fallback to windowing if overall audio has signal
+    // Helper to validate and gently normalize speech segments
+    const prepareSamples = (raw: Float32Array): Float32Array | null => {
+      let maxPeak = 0;
+      for (let i = 0; i < raw.length; i++) {
+        const v = Math.abs(raw[i]);
+        if (v > maxPeak) maxPeak = v;
+      }
+      // Reject pure room noise / dead air
+      if (maxPeak < 0.012) {
+        return null;
+      }
+      // Gentle gain normalization for distant or quiet speech
+      if (maxPeak > 0.015 && maxPeak < 0.35) {
+        const targetPeak = 0.65;
+        const gain = Math.min(3.5, targetPeak / maxPeak);
+        const normalized = new Float32Array(raw.length);
+        for (let i = 0; i < raw.length; i++) {
+          normalized[i] = raw[i] * gain;
+        }
+        return normalized;
+      }
+      return raw;
+    };
+
+    // If no distinct voice was separated, fallback to windowing only if audio has real signal
     if (intervals.length === 0) {
       const avgEnergy = numFrames > 0 ? energySum / numFrames : 0;
-      // Accept even subtle voice signals (avgEnergy > 0.0005 or max peak > 0.005)
       let maxPeak = 0;
       for (let s = 0; s < Math.min(audio.length, 32000); s++) {
         const absVal = Math.abs(audio[s]);
         if (absVal > maxPeak) maxPeak = absVal;
       }
 
-      if (avgEnergy > 0.0005 || maxPeak > 0.005) {
+      if (avgEnergy > 0.005 && maxPeak > 0.03) {
         // Break into maxChunkDurationSec chunks (~25s)
         return this.sliceIntoEqualChunks(audio, this.maxChunkDurationSec);
       }
@@ -211,11 +234,14 @@ export class ClinicalAudioSegmenter {
         if (endSec - startSec >= this.minChunkDurationSec) {
           const startSample = currentStartFrame * frameSize;
           const endSample = safeEndFrame * frameSize;
-          segments.push({
-            startSec,
-            endSec,
-            samples: audio.slice(startSample, endSample),
-          });
+          const processed = prepareSamples(audio.slice(startSample, endSample));
+          if (processed) {
+            segments.push({
+              startSec,
+              endSec,
+              samples: processed,
+            });
+          }
         }
 
         // Start next chunk without carrying idle silence
@@ -233,11 +259,14 @@ export class ClinicalAudioSegmenter {
     if (finalEndSec - finalStartSec >= this.minChunkDurationSec) {
       const startSample = currentStartFrame * frameSize;
       const endSample = finalEndFrame * frameSize;
-      segments.push({
-        startSec: finalStartSec,
-        endSec: finalEndSec,
-        samples: audio.slice(startSample, endSample),
-      });
+      const processed = prepareSamples(audio.slice(startSample, endSample));
+      if (processed) {
+        segments.push({
+          startSec: finalStartSec,
+          endSec: finalEndSec,
+          samples: processed,
+        });
+      }
     }
 
     return segments;
