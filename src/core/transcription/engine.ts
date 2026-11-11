@@ -29,6 +29,10 @@ export class WhisperTranscriptionEngine implements ITranscriptionEngine {
     return this.activeTier;
   }
 
+  public isReady(): boolean {
+    return this.isLoaded && this.worker !== null;
+  }
+
   public getBackend(): 'webgpu' | 'wasm' {
     return this.activeBackend;
   }

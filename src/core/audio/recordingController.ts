@@ -118,6 +118,11 @@ export class RecordingController {
     }
     this.audioContext = ctx;
 
+    // Ensure AudioContext is un-suspended on start (browser autoplay / audio graph policy)
+    if (ctx.state === 'suspended') {
+      await ctx.resume();
+    }
+
     // 3. Load AudioWorkletProcessor
     await ctx.audioWorklet.addModule('/recorder-worklet.js');
 
@@ -231,6 +236,9 @@ export class RecordingController {
   public pauseRecording() {
     if (!this.isRecording || this.isPaused) return;
     this.isPaused = true;
+    if (this.audioContext && this.audioContext.state === 'running') {
+      this.audioContext.suspend().catch(() => {});
+    }
     this.workletNode?.port.postMessage({ command: 'pause' });
   }
 
@@ -238,6 +246,9 @@ export class RecordingController {
     if (!this.isRecording || !this.isPaused) return;
     this.isPaused = false;
     this.lastSoundDetectedAt = Date.now();
+    if (this.audioContext && this.audioContext.state === 'suspended') {
+      this.audioContext.resume().catch(() => {});
+    }
     this.workletNode?.port.postMessage({ command: 'resume' });
   }
 

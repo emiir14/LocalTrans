@@ -45,7 +45,7 @@ class BackgroundChunkTranscriber {
 
       const { chunk, sessionId, workspaceId } = item;
       const engine = getSharedWhisperEngine();
-      if (!engine.getBackend()) {
+      if (!engine.isReady()) {
         await engine.load('fast');
       }
 
@@ -347,23 +347,31 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
 
     const settings = get().settings;
-    await controller.startRecording(newSession, {
-      noiseSuppression: settings?.noiseSuppression ?? false,
-      audioDeviceId: settings?.selectedAudioDeviceId,
-    });
+    try {
+      await controller.startRecording(newSession, {
+        noiseSuppression: settings?.noiseSuppression ?? false,
+        audioDeviceId: settings?.selectedAudioDeviceId,
+      });
 
-    set({
-      recordingController: controller,
-      isRecording: true,
-      isPaused: false,
-      dayPatientIndex: 1,
-      recordingDurationSec: 0,
-      currentView: 'recording',
-      activeSession: newSession,
-      currentSessionId: sessionId,
-      lastSavedAt: Date.now(),
-      silenceWarning: false,
-    });
+      set({
+        recordingController: controller,
+        isRecording: true,
+        isPaused: false,
+        dayPatientIndex: 1,
+        recordingDurationSec: 0,
+        currentView: 'recording',
+        activeSession: newSession,
+        currentSessionId: sessionId,
+        lastSavedAt: Date.now(),
+        silenceWarning: false,
+      });
+    } catch (err: any) {
+      console.error('Failed to start recording:', err);
+      get().showToast(
+        err.message || 'No se pudo acceder al micrófono. Por favor verifica los permisos en tu navegador.',
+        'warning'
+      );
+    }
   },
 
   pauseRecording: () => {
