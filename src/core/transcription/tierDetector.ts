@@ -95,9 +95,10 @@ export async function detectHardwareCapabilities(): Promise<HardwareCapabilities
 
   // Recommended tier for auto mode:
   // Default to 'balanced' (whisper-small) across all devices for high clinical accuracy.
-  // Uses WebGPU if present, or all CPU cores on WASM fallback.
+  // On mobile devices (Android / iOS), always enforce 'wasm' (multithreaded CPU) to prevent
+  // mobile GPU buffer_manager.cc crashes and Brave Shields GPU readback blocks.
   const recommendedTier: ModelTier = 'balanced';
-  const recommendedBackend: 'webgpu' | 'wasm' = hasWebGpu ? 'webgpu' : 'wasm';
+  const recommendedBackend: 'webgpu' | 'wasm' = !isMobile && hasWebGpu ? 'webgpu' : 'wasm';
 
   return {
     hasWebGpu,
@@ -122,9 +123,12 @@ export function resolveTier(
 
   const baseConfig = TIER_CONFIGS[activeTier] || TIER_CONFIGS.balanced;
   
-  // If user selected max but has no WebGPU, fallback backend to wasm
+  // On mobile devices (Android / iOS), always enforce 'wasm' to avoid mobile GPU buffer allocation crashes
+  // and Brave fingerprinting shield blocks. Use WebGPU only on desktop / laptops.
   const backend: 'webgpu' | 'wasm' =
-    hardware.hasWebGpu && baseConfig.defaultBackend === 'webgpu' ? 'webgpu' : 'wasm';
+    !hardware.isMobile && hardware.hasWebGpu && baseConfig.defaultBackend === 'webgpu'
+      ? 'webgpu'
+      : 'wasm';
 
   return {
     tier: activeTier,

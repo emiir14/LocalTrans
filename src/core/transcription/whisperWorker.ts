@@ -29,6 +29,15 @@ self.onmessage = async (event: MessageEvent) => {
         currentModelId = modelId;
         currentDevice = device || 'wasm';
 
+        // Check if device is mobile - enforce WASM to prevent GPU buffer_manager.cc download crashes
+        const isMobileWorker =
+          typeof navigator !== 'undefined' &&
+          /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobileWorker && currentDevice === 'webgpu') {
+          console.info('[WhisperWorker] Mobile browser detected, using stable CPU WASM backend');
+          currentDevice = 'wasm';
+        }
+
         // Check if device is webgpu but WebGPU is not supported in worker context
         if (currentDevice === 'webgpu' && !(navigator as any).gpu) {
           console.warn('[WhisperWorker] WebGPU not available in worker, falling back to wasm');
@@ -121,7 +130,23 @@ self.onmessage = async (event: MessageEvent) => {
           options.initial_prompt = initialPrompt;
         }
 
-        const output = await transcriber(floatAudio, options);
+        let output: any;
+        try {
+          output = await transcriber(floatAudio, options);
+        } catch (inferenceErr: any) {
+          // If WebGPU failed during execution (e.g. buffer_manager.cc download failure or memory limit)
+          if (currentDevice === 'webgpu') {
+            console.warn('[WhisperWorker] WebGPU inference failed, dynamically falling back to WASM:', inferenceErr);
+            currentDevice = 'wasm';
+            transcriber = await pipeline('automatic-speech-recognition', currentModelId, {
+              device: 'wasm',
+              dtype: 'q4',
+            });
+            output = await transcriber(floatAudio, options);
+          } else {
+            throw inferenceErr;
+          }
+        }
 
         self.postMessage({
           type: 'segment_complete',

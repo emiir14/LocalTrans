@@ -226,7 +226,14 @@ export const SettingsView: React.FC = () => {
               Hardware detectado en tu navegador:
             </div>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-500">
-              <span>WebGPU: {hardware.hasWebGpu ? 'Disponible (Acelerado)' : 'No detectado (WASM CPU)'}</span>
+              <span>
+                Aceleración:{' '}
+                {hardware.isMobile
+                  ? 'WASM CPU Multihilo (Optimizado para móviles)'
+                  : hardware.hasWebGpu
+                  ? 'WebGPU Acelerado'
+                  : 'WASM CPU Multihilo'}
+              </span>
               {hardware.adapterInfo && <span>Adaptador: {hardware.adapterInfo}</span>}
               {hardware.deviceMemoryGb && <span>Memoria RAM: ~{hardware.deviceMemoryGb} GB</span>}
               <span>Hilos de CPU: {hardware.hardwareConcurrency}</span>
