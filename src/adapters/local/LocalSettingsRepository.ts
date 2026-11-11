@@ -5,7 +5,7 @@ import { db } from './db';
 const DEFAULT_SETTINGS: (workspaceId: string) => AppSettings = (workspaceId) => ({
   id: `settings_${workspaceId}`,
   workspaceId,
-  modelTier: 'auto',
+  modelTier: 'balanced', // whisper-small default for high clinical accuracy
   noiseSuppression: false, // Turned off by default as requested in prompt to preserve voice frequencies
   selectedAudioDeviceId: undefined,
   requireConsent: true,

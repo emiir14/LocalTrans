@@ -10,6 +10,7 @@ import {
 import { formatTimeDisplay } from '../export/formatter';
 import { ModelTier, TranscriptSegment } from '../types';
 import { getSharedWhisperEngine, WhisperTranscriptionEngine } from './engine';
+import { CLINICAL_WHISPER_INITIAL_PROMPT } from './prompts';
 import { ClinicalAudioSegmenter } from './vad';
 
 export interface PipelineProgress {
@@ -132,8 +133,7 @@ export class TranscriptionPipeline {
     const glossaryEntries = await this.glossaryRepo.getAll(workspaceId);
 
     // Initial prompt for Whisper with enriched dental vocabulary context
-    const initialPrompt =
-      'Consulta odontológica en español. Términos: conductometría, endodoncia, amalgama, obturación, periodonto, composite, carilla, oclusal, mesial, distal, vestibular, palatino, periapical, gutapercha, raspaje, exodoncia, implante, prótesis, anestesia, tartrectomía, bruxismo.';
+    const initialPrompt = CLINICAL_WHISPER_INITIAL_PROMPT;
 
     // 6. Check existing segments to support resumption & progressive pre-transcription
     const existingSegments = await this.transcriptRepo.getBySessionId(sessionId);

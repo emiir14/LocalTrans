@@ -5,7 +5,7 @@ import { TIER_CONFIGS } from '../core/transcription/tierDetector';
 import { BenchmarkResult, ModelTier } from '../core/types';
 
 export const BenchmarkView: React.FC = () => {
-  const [selectedTier, setSelectedTier] = useState<ModelTier>('fast');
+  const [selectedTier, setSelectedTier] = useState<ModelTier>('balanced');
   const [selectedBackend, setSelectedBackend] = useState<'wasm' | 'webgpu'>('wasm');
   const [referenceText, setReferenceText] = useState('');
   const [audioSamples, setAudioSamples] = useState<Float32Array | null>(null);
@@ -77,7 +77,7 @@ export const BenchmarkView: React.FC = () => {
     setIsRunning(true);
     setStatusMessage('Iniciando motor de benchmark...');
 
-    const tierKey = selectedTier === 'auto' ? 'fast' : selectedTier;
+    const tierKey = selectedTier === 'auto' || (selectedTier as string) === 'fast' ? 'balanced' : selectedTier;
     const tierConfig = TIER_CONFIGS[tierKey];
 
     const engine = new WhisperTranscriptionEngine();
@@ -204,9 +204,8 @@ export const BenchmarkView: React.FC = () => {
               onChange={(e) => setSelectedTier(e.target.value as ModelTier)}
               className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100"
             >
-              <option value="fast">Rápida (whisper-base)</option>
-              <option value="balanced">Equilibrada (whisper-small)</option>
-              <option value="max">Máxima (whisper-large-v3-turbo)</option>
+              <option value="balanced">Alta precisión clínica (whisper-small)</option>
+              <option value="max">Máxima resolución (whisper-large-v3-turbo)</option>
             </select>
           </div>
 

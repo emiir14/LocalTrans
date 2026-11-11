@@ -22,20 +22,11 @@ export interface ModelTierConfig {
 }
 
 export const TIER_CONFIGS: Record<Exclude<ModelTier, 'auto'>, ModelTierConfig> = {
-  fast: {
-    tier: 'fast',
-    modelId: 'onnx-community/whisper-base',
-    label: 'Rápida (Recomendada)',
-    description: 'Máxima velocidad (~75 MB). Procesa cada fragmento en 1-2 segundos sin saturar el equipo.',
-    defaultBackend: 'webgpu',
-    dtype: 'q4',
-    estimatedDownloadMb: 75,
-  },
   balanced: {
     tier: 'balanced',
     modelId: 'onnx-community/whisper-small',
-    label: 'Equilibrada',
-    description: 'Excelente balance para teléfonos modernos y laptops (~140 MB).',
+    label: 'Alta precisión clínica (whisper-small)',
+    description: 'Estándar clínico de alta fidelidad (~140 MB). 244 millones de parámetros para captar terminología técnica con exactitud.',
     defaultBackend: 'webgpu',
     dtype: 'q4',
     estimatedDownloadMb: 140,
@@ -43,14 +34,24 @@ export const TIER_CONFIGS: Record<Exclude<ModelTier, 'auto'>, ModelTierConfig> =
   max: {
     tier: 'max',
     modelId: 'onnx-community/whisper-large-v3-turbo',
-    label: 'Máxima precisión (Pesada)',
-    description: 'Mayor fidelidad en casos específicos (~350 MB). Requiere PC potente con WebGPU.',
+    label: 'Máxima precisión (whisper-large-v3-turbo)',
+    description: 'Mayor fidelidad en casos específicos (~350 MB). 800 millones de parámetros. Requiere PC potente con WebGPU.',
     defaultBackend: 'webgpu',
     dtype: {
       encoder_model: 'fp16',
       decoder_model_merged: 'q4',
     },
     estimatedDownloadMb: 350,
+  },
+  // Legacy alias for existing persisted databases: automatically uses whisper-small
+  fast: {
+    tier: 'balanced',
+    modelId: 'onnx-community/whisper-small',
+    label: 'Alta precisión clínica (whisper-small)',
+    description: 'Estándar clínico de alta fidelidad (~140 MB).',
+    defaultBackend: 'webgpu',
+    dtype: 'q4',
+    estimatedDownloadMb: 140,
   },
 };
 
@@ -93,9 +94,9 @@ export async function detectHardwareCapabilities(): Promise<HardwareCapabilities
   }
 
   // Recommended tier for auto mode:
-  // Default to 'fast' (whisper-base) across all devices for fast, responsive processing.
+  // Default to 'balanced' (whisper-small) across all devices for high clinical accuracy.
   // Uses WebGPU if present, or all CPU cores on WASM fallback.
-  const recommendedTier: ModelTier = 'fast';
+  const recommendedTier: ModelTier = 'balanced';
   const recommendedBackend: 'webgpu' | 'wasm' = hasWebGpu ? 'webgpu' : 'wasm';
 
   return {
@@ -115,11 +116,13 @@ export function resolveTier(
   hardware: HardwareCapabilities
 ): { tier: Exclude<ModelTier, 'auto'>; backend: 'webgpu' | 'wasm'; config: ModelTierConfig } {
   const activeTier: Exclude<ModelTier, 'auto'> =
-    selectedTier === 'auto' ? (hardware.recommendedTier as Exclude<ModelTier, 'auto'>) : selectedTier;
+    selectedTier === 'auto' || (selectedTier as string) === 'fast'
+      ? 'balanced'
+      : (selectedTier as Exclude<ModelTier, 'auto'>);
 
-  const baseConfig = TIER_CONFIGS[activeTier];
+  const baseConfig = TIER_CONFIGS[activeTier] || TIER_CONFIGS.balanced;
   
-  // If user selected max or balanced but has no WebGPU, fallback backend to wasm
+  // If user selected max but has no WebGPU, fallback backend to wasm
   const backend: 'webgpu' | 'wasm' =
     hardware.hasWebGpu && baseConfig.defaultBackend === 'webgpu' ? 'webgpu' : 'wasm';
 

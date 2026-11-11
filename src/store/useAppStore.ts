@@ -10,6 +10,7 @@ import { LocalTranscriptRepository } from '../adapters/local/LocalTranscriptRepo
 import { BatteryStatus, RecordingController, VuData } from '../core/audio/recordingController';
 import { getSharedWhisperEngine } from '../core/transcription/engine';
 import { PipelineProgress, TranscriptionPipeline } from '../core/transcription/pipeline';
+import { CLINICAL_WHISPER_INITIAL_PROMPT } from '../core/transcription/prompts';
 import { ClinicalAudioSegmenter } from '../core/transcription/vad';
 import { AppSettings, AudioChunk, GlossaryEntry, Profile, Session, TranscriptSegment, Workspace } from '../core/types';
 
@@ -46,7 +47,8 @@ class BackgroundChunkTranscriber {
       const { chunk, sessionId, workspaceId } = item;
       const engine = getSharedWhisperEngine();
       if (!engine.isReady()) {
-        await engine.load('fast');
+        const currentSettings = useAppStore.getState().settings;
+        await engine.load(currentSettings?.modelTier || 'balanced');
       }
 
       // Convert chunk 16kHz Int16 to Float32
@@ -61,8 +63,7 @@ class BackgroundChunkTranscriber {
       if (speechSegments.length === 0) return;
 
       const glossaryEntries = await glossaryRepo.getAll(workspaceId);
-      const initialPrompt =
-        'Consulta odontológica en español. Términos: conductometría, endodoncia, amalgama, obturación, periodonto, composite, carilla, oclusal, mesial, distal, vestibular, palatino, periapical, gutapercha, raspaje, exodoncia, implante, prótesis, anestesia, tartrectomía, bruxismo.';
+      const initialPrompt = CLINICAL_WHISPER_INITIAL_PROMPT;
 
       for (let i = 0; i < speechSegments.length; i++) {
         const seg = speechSegments[i];
@@ -272,7 +273,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     // Pre-warm the shared Whisper engine in background after initial render
     if (typeof window !== 'undefined') {
       setTimeout(() => {
-        getSharedWhisperEngine().load('fast').catch(() => {});
+        getSharedWhisperEngine().load(sets.modelTier || 'balanced').catch(() => {});
       }, 1500);
     }
   },

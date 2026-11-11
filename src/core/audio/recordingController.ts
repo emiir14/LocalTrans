@@ -128,11 +128,18 @@ export class RecordingController {
 
     this.sourceNode = ctx.createMediaStreamSource(stream);
 
-    // Highpass filter (80Hz) to remove mechanical desk thumps, low HVAC rumble, and mic contact pops
+    // Human vocal bandpass:
+    // 1) Highpass filter (80Hz) to remove mechanical desk thumps, low HVAC rumble, and mic contact pops
     const highpass = ctx.createBiquadFilter();
     highpass.type = 'highpass';
     highpass.frequency.value = 80;
     highpass.Q.value = 0.7;
+
+    // 2) Lowpass filter (7500Hz) to remove ultrasonic scaler noise and high-pitched dental turbine whine (>8kHz)
+    const lowpass = ctx.createBiquadFilter();
+    lowpass.type = 'lowpass';
+    lowpass.frequency.value = 7500;
+    lowpass.Q.value = 0.7;
 
     this.workletNode = new AudioWorkletNode(ctx, 'pcm-recorder-processor');
 
@@ -147,7 +154,8 @@ export class RecordingController {
     };
 
     this.sourceNode.connect(highpass);
-    highpass.connect(this.workletNode);
+    highpass.connect(lowpass);
+    lowpass.connect(this.workletNode);
     // Connect to a dummy gain to keep the graph alive without feeding audio to speakers
     const silentGain = ctx.createGain();
     silentGain.gain.value = 0;

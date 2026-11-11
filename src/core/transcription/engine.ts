@@ -14,7 +14,7 @@ export interface ProgressCallbackData {
 export class WhisperTranscriptionEngine implements ITranscriptionEngine {
   private worker: Worker | null = null;
   private activeTier: ModelTier = 'auto';
-  private resolvedTier: Exclude<ModelTier, 'auto'> = 'fast';
+  private resolvedTier: Exclude<ModelTier, 'auto'> = 'balanced';
   private activeBackend: 'webgpu' | 'wasm' = 'wasm';
   private isLoaded = false;
   private pendingSegmentResolver: ((result: any) => void) | null = null;

@@ -238,23 +238,18 @@ export const SettingsView: React.FC = () => {
           {[
             {
               id: 'auto',
-              label: 'Automático (Ultra rápido)',
-              desc: 'Configura el modelo optimizado (whisper-base) con aceleración WebGPU y multihilo automático.',
-            },
-            {
-              id: 'fast',
-              label: 'Rápida (whisper-base)',
-              desc: 'Máxima velocidad (~75 MB). Procesa cada fragmento en 1 a 2 segundos con mínimo consumo.',
+              label: 'Automático (whisper-small)',
+              desc: 'Configura el modelo de alta precisión clínica (whisper-small) con aceleración WebGPU o CPU multihilo.',
             },
             {
               id: 'balanced',
-              label: 'Equilibrada (whisper-small)',
-              desc: 'Excelente balance para teléfonos modernos y laptops (~140 MB).',
+              label: 'Alta precisión clínica (whisper-small)',
+              desc: 'Modelo estándar recomendado (~140 MB). 244 millones de parámetros para captar terminología técnica con exactitud.',
             },
             {
               id: 'max',
-              label: 'Máxima (whisper-large-v3-turbo)',
-              desc: 'Modelo pesado (~350 MB) para transcripción de máxima resolución. Requiere PC con WebGPU.',
+              label: 'Máxima resolución (whisper-large-v3-turbo)',
+              desc: 'Modelo de 800M parámetros (~350 MB) para la máxima fidelidad acústica. Requiere computadora potente con WebGPU.',
             },
           ].map((tier) => {
             const isSelected = (settings?.modelTier || 'auto') === tier.id;
