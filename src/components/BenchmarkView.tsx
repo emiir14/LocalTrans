@@ -257,5 +257,3 @@ export const BenchmarkSection: React.FC = () => {
   );
 };
 
-// Backwards-compatibility alias
-export const BenchmarkView = BenchmarkSection;

@@ -14,6 +14,7 @@ export default defineConfig(() => {
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon.svg'],
         manifest: {
           id: '/',
+          lang: 'es',
           name: 'Escriba - Transcripción Odontológica',
           short_name: 'Escriba',
           description: 'Grabación y transcripción local privada de consultas odontológicas.',
@@ -46,7 +47,8 @@ export default defineConfig(() => {
         workbox: {
           skipWaiting: true,
           clientsClaim: true,
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm}'],
+          globPatterns: ['**/*.{js,css,html,wasm}'],
+          globIgnores: ['**/assets/aistudio/**'],
           maximumFileSizeToCacheInBytes: 35 * 1024 * 1024,
         },
         devOptions: {
