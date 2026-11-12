@@ -1,5 +1,4 @@
-import React from 'react';
-import { ShieldCheck, HardDrive, Cpu, WifiOff, FileLock2, AlertCircle } from 'lucide-react';
+import { ShieldCheck, HardDrive, Cpu, WifiOff, FileLock2 } from 'lucide-react';
 
 export const PrivacyView: React.FC = () => {
   return (
@@ -67,18 +66,50 @@ export const PrivacyView: React.FC = () => {
         </div>
       </div>
 
-      {/* Legal & Medical Notice */}
-      <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-3">
+      {/* Practical Clinical Usage Guide (ARG & URU) */}
+      <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-4">
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-900 dark:text-slate-100">
-          <AlertCircle className="w-4 h-4 text-amber-600" />
-          <span>Consideraciones ético-legales (Ley 25.326 y consentimiento)</span>
+          <ShieldCheck className="w-4 h-4 text-teal-600" />
+          <span>Guía rápida de buenas prácticas en consulta clínica</span>
         </div>
-        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-          En la República Argentina y en la mayoría de las legislaciones hispanoamericanas, los registros orales y las historias clínicas contienen <strong>datos de salud sensibles</strong> amparados por la Ley 25.326 de Protección de los Datos Personales.
-        </p>
-        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-          Recomendamos como buena práctica médica solicitar el <strong>consentimiento verbal o firmado</strong> del paciente previo a la grabación, y registrar las consultas identificándolas con iniciales o códigos internos de historia clínica, evitando nombres y documentos de identidad completos en el título de la sesión.
-        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <div className="space-y-1 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/60">
+            <h3 className="font-semibold text-slate-800 dark:text-slate-200">
+              1. Consentimiento e identificación
+            </h3>
+            <p className="text-slate-500 dark:text-slate-400 leading-relaxed">
+              Informá brevemente al paciente que utilizarás transcripción de voz local para confeccionar su ficha odontológica. Por buena práctica clínica y resguardo ético, podés titular la sesión con sus iniciales o número de historia clínica/cédula interna.
+            </p>
+          </div>
+
+          <div className="space-y-1 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/60">
+            <h3 className="font-semibold text-slate-800 dark:text-slate-200">
+              2. Ubicación del micrófono
+            </h3>
+            <p className="text-slate-500 dark:text-slate-400 leading-relaxed">
+              Ubicá el teléfono o micrófono a 40–70 cm de tu zona de habla. El filtro acústico incorporado atenúa ruidos de saliva y succión, pero orientar el micrófono hacia vos garantiza máxima fidelidad fonética.
+            </p>
+          </div>
+
+          <div className="space-y-1 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/60">
+            <h3 className="font-semibold text-slate-800 dark:text-slate-200">
+              3. Dicción y nomenclatura FDI
+            </h3>
+            <p className="text-slate-500 dark:text-slate-400 leading-relaxed">
+              Dictá hallazgos de forma fluida usando la terminología habitual (ej: <em>«pieza 1.6 cara oclusal con caries de esmalte», «recambio de composite 2.4 mesial»</em>). El vocabulario dental integrado normaliza piezas y caras automáticamente.
+            </p>
+          </div>
+
+          <div className="space-y-1 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/60">
+            <h3 className="font-semibold text-slate-800 dark:text-slate-200">
+              4. Cierre y evolución médica
+            </h3>
+            <p className="text-slate-500 dark:text-slate-400 leading-relaxed">
+              Al finalizar la atención, usá el botón <strong>«Copiar para IA»</strong> o exportá el texto para pegarlo directamente en el software de gestión o historia clínica digital de tu clínica. Podés conservar el audio local o eliminarlo para liberar espacio.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

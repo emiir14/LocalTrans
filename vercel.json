@@ -8,7 +8,7 @@
         { "key": "Permissions-Policy", "value": "microphone=(self)" },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net https://vercel.live; connect-src 'self' blob: data: https://huggingface.co https://*.huggingface.co https://hf.co https://*.hf.co https://*.amazonaws.com https://*.cloudfront.net https://cdn.jsdelivr.net https://vercel.live wss://*.pusher.com; style-src 'self' 'unsafe-inline' https://vercel.live; img-src 'self' data: blob: https://vercel.live https://vercel.com; media-src 'self' blob:; worker-src 'self' blob:; frame-src https://vercel.live; font-src 'self' data: https://vercel.live https://assets.vercel.com;"
+          "value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net https://vercel.live; connect-src 'self' blob: data: https://huggingface.co https://*.huggingface.co https://hf.co https://*.hf.co https://*.amazonaws.com https://*.cloudfront.net https://*.xethub.com https://*.xethub.hf.co https://cdn.jsdelivr.net https://vercel.live wss://*.pusher.com; style-src 'self' 'unsafe-inline' https://vercel.live; img-src 'self' data: blob: https://vercel.live https://vercel.com; media-src 'self' blob:; worker-src 'self' blob:; frame-src https://vercel.live; font-src 'self' data: https://vercel.live https://assets.vercel.com;"
         }
       ]
     }

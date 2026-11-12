@@ -92,16 +92,6 @@ export interface AppSettings {
   updatedAt: number;
 }
 
-export interface TranscriptionProgress {
-  sessionId: string;
-  progressPercent: number; // 0 - 100
-  currentSegment: number;
-  totalSegments: number;
-  estimatedRemainingSec: number;
-  phase: 'vad' | 'transcribing' | 'formatting' | 'idle';
-  statusText: string;
-}
-
 export interface BenchmarkResult {
   tier: ModelTier;
   deviceBackend: 'webgpu' | 'wasm';
@@ -110,7 +100,6 @@ export interface BenchmarkResult {
   audioDurationSec: number;
   transcriptionTimeMs: number;
   realTimeFactor: number; // transcriptionTime / audioDuration
-  memoryEstimatedMb?: number;
   transcribedText: string;
-  wordErrorRate?: number; // WER compared with reference if provided
 }
+

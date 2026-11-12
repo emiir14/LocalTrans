@@ -13,6 +13,7 @@ import { PipelineProgress, TranscriptionPipeline } from '../core/transcription/p
 import { CLINICAL_WHISPER_INITIAL_PROMPT } from '../core/transcription/prompts';
 import { ClinicalAudioSegmenter } from '../core/transcription/vad';
 import { AppSettings, AudioChunk, GlossaryEntry, Profile, Session, TranscriptSegment, Workspace } from '../core/types';
+import { wakeLockManager } from '../core/utils/wakeLockManager';
 
 // Global singletons for repositories
 export const sessionRepo = new LocalSessionRepository();
@@ -39,6 +40,7 @@ class BackgroundChunkTranscriber {
   private async processQueue() {
     if (this.isProcessing || this.queue.length === 0) return;
     this.isProcessing = true;
+    await wakeLockManager.acquire('bg_transcription');
 
     try {
       const item = this.queue.shift();
@@ -110,6 +112,8 @@ class BackgroundChunkTranscriber {
       this.isProcessing = false;
       if (this.queue.length > 0) {
         this.processQueue();
+      } else {
+        await wakeLockManager.release('bg_transcription');
       }
     }
   }
@@ -117,7 +121,7 @@ class BackgroundChunkTranscriber {
 
 export const backgroundChunkTranscriber = new BackgroundChunkTranscriber();
 
-export type AppView = 'home' | 'recording' | 'detail' | 'settings' | 'privacy' | 'benchmark';
+export type AppView = 'home' | 'recording' | 'detail' | 'settings' | 'privacy';
 
 interface AppState {
   currentView: AppView;
@@ -269,6 +273,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     // Check battery
     const batt = await RecordingController.getBatteryStatus();
     set({ battery: batt });
+
+    // Sync global wakeLock state across recording, downloading, and transcription
+    wakeLockManager.subscribe((active) => {
+      set({ wakeLockActive: active });
+    });
 
     // Pre-warm the shared Whisper engine in background after initial render
     if (typeof window !== 'undefined') {
@@ -531,6 +540,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       },
     });
 
+    await wakeLockManager.acquire('transcription');
     try {
       const segments = await pipeline.run(
         sessionId,
@@ -570,6 +580,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       await sessionRepo.update(sessionId, { status: 'error', error: err.message });
       await get().loadSessionDetail(sessionId);
       get().showToast(err.message || 'Error en la transcripción', 'warning');
+    } finally {
+      await wakeLockManager.release('transcription');
     }
   },
 
@@ -577,6 +589,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const pipeline = get().transcriptionPipeline;
     if (pipeline) {
       pipeline.cancel();
+      wakeLockManager.release('transcription').catch(() => {});
       set({
         transcribingSessionId: null,
         transcriptionProgress: null,

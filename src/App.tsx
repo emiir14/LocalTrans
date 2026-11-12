@@ -4,7 +4,6 @@
  */
 
 import React, { useEffect } from 'react';
-import { BenchmarkView } from './components/BenchmarkView';
 import { ConfirmModal } from './components/ConfirmModal';
 import { DetailView } from './components/DetailView';
 import { HomeView } from './components/HomeView';
@@ -22,10 +21,10 @@ export default function App() {
   useEffect(() => {
     init();
 
-    // Check if initial URL is /benchmark or hash
+    // Check if initial URL is /benchmark or hash - redirect to settings
     const path = window.location.pathname;
     if (path.includes('/benchmark') || window.location.hash === '#benchmark') {
-      setView('benchmark');
+      setView('settings');
     }
   }, [init, setView]);
 
@@ -58,7 +57,6 @@ export default function App() {
         {currentView === 'detail' && <DetailView />}
         {currentView === 'settings' && <SettingsView />}
         {currentView === 'privacy' && <PrivacyView />}
-        {currentView === 'benchmark' && <BenchmarkView />}
       </main>
 
       {/* First-use modal, confirm dialog & notification toast */}

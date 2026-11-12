@@ -12,6 +12,7 @@ import { ModelTier, TranscriptSegment } from '../types';
 import { getSharedWhisperEngine, WhisperTranscriptionEngine } from './engine';
 import { CLINICAL_WHISPER_INITIAL_PROMPT } from './prompts';
 import { ClinicalAudioSegmenter } from './vad';
+import { wakeLockManager } from '../utils/wakeLockManager';
 
 export interface PipelineProgress {
   sessionId: string;
@@ -57,13 +58,15 @@ export class TranscriptionPipeline {
     onSegmentTranscribed?: (segment: TranscriptSegment) => void
   ): Promise<TranscriptSegment[]> {
     this.isCancelled = false;
-    const session = await this.sessionRepo.getById(sessionId);
-    if (!session) {
-      throw new Error(`Sesión ${sessionId} no encontrada`);
-    }
+    await wakeLockManager.acquire(`pipeline_${sessionId}`);
+    try {
+      const session = await this.sessionRepo.getById(sessionId);
+      if (!session) {
+        throw new Error(`Sesión ${sessionId} no encontrada`);
+      }
 
-    // 1. Mark session as transcribing
-    await this.sessionRepo.update(sessionId, { status: 'transcribing' });
+      // 1. Mark session as transcribing
+      await this.sessionRepo.update(sessionId, { status: 'transcribing' });
 
     // 2. Load audio PCM Float32 from local IndexedDB
     onProgress?.({
@@ -304,7 +307,10 @@ export class TranscriptionPipeline {
       activeTier: this.engine.getActiveTier(),
     });
 
-    return allSegments.sort((a, b) => a.start - b.start);
+      return allSegments.sort((a, b) => a.start - b.start);
+    } finally {
+      await wakeLockManager.release(`pipeline_${sessionId}`);
+    }
   }
 
   public async dispose(): Promise<void> {

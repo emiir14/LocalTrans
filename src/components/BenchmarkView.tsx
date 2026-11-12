@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { Activity, Play, Upload, CheckCircle2, RotateCw, FileText } from 'lucide-react';
+import { Activity, Play, Upload, RotateCw } from 'lucide-react';
 import { WhisperTranscriptionEngine } from '../core/transcription/engine';
 import { TIER_CONFIGS } from '../core/transcription/tierDetector';
 import { BenchmarkResult, ModelTier } from '../core/types';
+import { wakeLockManager } from '../core/utils/wakeLockManager';
 
-export const BenchmarkView: React.FC = () => {
+export const BenchmarkSection: React.FC = () => {
   const [selectedTier, setSelectedTier] = useState<ModelTier>('balanced');
-  const [selectedBackend, setSelectedBackend] = useState<'wasm' | 'webgpu'>('wasm');
-  const [referenceText, setReferenceText] = useState('');
   const [audioSamples, setAudioSamples] = useState<Float32Array | null>(null);
   const [audioDurationSec, setAudioDurationSec] = useState(0);
   const [audioFileName, setAudioFileName] = useState('');
@@ -35,7 +34,6 @@ export const BenchmarkView: React.FC = () => {
     setAudioSamples(samples);
     setAudioDurationSec(duration);
     setAudioFileName('Audio sintético de prueba (5.0s)');
-    setReferenceText('prueba de audio sintética');
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,10 +79,11 @@ export const BenchmarkView: React.FC = () => {
     const tierConfig = TIER_CONFIGS[tierKey];
 
     const engine = new WhisperTranscriptionEngine();
+    await wakeLockManager.acquire('benchmark');
 
     try {
-      // 1. Measure load time
-      setStatusMessage(`Cargando modelo ${tierConfig.modelId} (${selectedBackend})...`);
+      // 1. Measure load time & auto-detect backend
+      setStatusMessage(`Cargando modelo ${tierConfig.modelId}...`);
       const t0Load = performance.now();
       await engine.load(selectedTier, (p) => {
         if (p.status === 'progress' && typeof p.progress === 'number') {
@@ -93,9 +92,10 @@ export const BenchmarkView: React.FC = () => {
       });
       const t1Load = performance.now();
       const loadTimeMs = Math.round(t1Load - t0Load);
+      const detectedBackend = engine.getActiveBackend();
 
       // 2. Measure transcription time
-      setStatusMessage('Transcribiendo audio de prueba...');
+      setStatusMessage(`Transcribiendo audio de prueba (${detectedBackend.toUpperCase()})...`);
       const t0Transcribe = performance.now();
       const result = await engine.transcribe(audioSamples, {
         language: 'es',
@@ -106,22 +106,15 @@ export const BenchmarkView: React.FC = () => {
 
       const rtf = Math.round((transcribeTimeMs / (audioDurationSec * 1000)) * 100) / 100;
 
-      // 3. Compute WER if reference text given
-      let wer: number | undefined;
-      if (referenceText.trim()) {
-        wer = computeWer(referenceText.trim(), result.text);
-      }
-
       const res: BenchmarkResult = {
         tier: selectedTier,
-        deviceBackend: selectedBackend,
+        deviceBackend: detectedBackend,
         modelId: tierConfig.modelId,
         loadTimeMs,
         audioDurationSec: Math.round(audioDurationSec * 10) / 10,
         transcriptionTimeMs: transcribeTimeMs,
         realTimeFactor: rtf,
         transcribedText: result.text,
-        wordErrorRate: wer,
       };
 
       setResults((prev) => [res, ...prev]);
@@ -131,27 +124,29 @@ export const BenchmarkView: React.FC = () => {
       console.error('Benchmark execution error:', err);
       setStatusMessage(`Error: ${err.message}`);
     } finally {
+      await wakeLockManager.release('benchmark');
       setIsRunning(false);
     }
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      <div>
-        <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-3 py-1 rounded-full border border-teal-200 dark:border-teal-800/60 mb-2">
-          <Activity className="w-3.5 h-3.5" />
-          <span>Herramienta de diagnóstico de desarrollo (/benchmark)</span>
+    <section className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 p-6 shadow-xs space-y-6">
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-xl bg-teal-50 dark:bg-teal-950/60 flex items-center justify-center text-teal-600 dark:text-teal-400">
+          <Activity className="w-5 h-5" />
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-          Laboratorio de rendimiento y latencia
-        </h1>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
-          Compara el tiempo de carga, Factor de Tiempo Real (RTF), backend (WebGPU vs WASM) y tasa de error (WER) en tu dispositivo actual.
-        </p>
+        <div>
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            Laboratorio de rendimiento y latencia
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Comprueba la velocidad de transcripción, tiempo de carga y Factor de Tiempo Real (RTF) en tu dispositivo actual.
+          </p>
+        </div>
       </div>
 
       {/* Benchmark Setup Form */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 p-6 shadow-xs space-y-6">
+      <div className="space-y-4 pt-1">
         {/* Step 1: Audio Input */}
         <div className="space-y-2">
           <label className="text-xs font-semibold text-slate-900 dark:text-slate-100">
@@ -166,7 +161,7 @@ export const BenchmarkView: React.FC = () => {
 
             <button
               onClick={handleGenerateSyntheticAudio}
-              className="px-4 py-2.5 rounded-xl text-xs font-medium text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 transition-colors"
+              className="px-4 py-2.5 rounded-xl text-xs font-medium text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900/40 transition-colors"
             >
               Generar audio sintético (5s)
             </button>
@@ -179,49 +174,24 @@ export const BenchmarkView: React.FC = () => {
           </div>
         </div>
 
-        {/* Step 2: Reference Text (Optional) */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-slate-900 dark:text-slate-100">
-            2. Transcripción de referencia (Opcional, para calcular Word Error Rate)
-          </label>
-          <input
-            type="text"
-            value={referenceText}
-            onChange={(e) => setReferenceText(e.target.value)}
-            placeholder="Pegá aquí el texto exacto esperado para calcular la tasa de error..."
-            className="w-full px-3.5 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-hidden"
-          />
-        </div>
-
-        {/* Step 3: Tier and Backend Selection */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
+        {/* Step 2: Model Tier Selection (Backend is automatic) */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
             <label className="text-xs font-semibold text-slate-900 dark:text-slate-100">
-              3. Nivel de modelo
+              2. Nivel de modelo (Whisper)
             </label>
-            <select
-              value={selectedTier}
-              onChange={(e) => setSelectedTier(e.target.value as ModelTier)}
-              className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100"
-            >
-              <option value="balanced">Alta precisión clínica (whisper-small)</option>
-              <option value="max">Máxima resolución (whisper-large-v3-turbo)</option>
-            </select>
+            <span className="text-[11px] text-teal-700 dark:text-teal-400 font-medium">
+              Backend auto-seleccionado según hardware (WebGPU / WASM)
+            </span>
           </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-900 dark:text-slate-100">
-              4. Backend de cómputo
-            </label>
-            <select
-              value={selectedBackend}
-              onChange={(e) => setSelectedBackend(e.target.value as any)}
-              className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100"
-            >
-              <option value="wasm">WASM (Multi-thread CPU)</option>
-              <option value="webgpu">WebGPU (Aceleración gráfica)</option>
-            </select>
-          </div>
+          <select
+            value={selectedTier}
+            onChange={(e) => setSelectedTier(e.target.value as ModelTier)}
+            className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100"
+          >
+            <option value="balanced">Estándar clínico (whisper-small) — Recomendado</option>
+            <option value="max">Máxima resolución (whisper-large-v3-turbo)</option>
+          </select>
         </div>
 
         {/* Run Button */}
@@ -233,17 +203,17 @@ export const BenchmarkView: React.FC = () => {
             className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-semibold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs transition-colors"
           >
             {isRunning ? <RotateCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
-            <span>{isRunning ? 'Ejecutando...' : 'Iniciar benchmark'}</span>
+            <span>{isRunning ? 'Ejecutando...' : 'Iniciar prueba de rendimiento'}</span>
           </button>
         </div>
       </div>
 
       {/* Benchmark Results Table */}
       {results.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 p-6 shadow-xs space-y-4">
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-            Resultados comparativos
-          </h2>
+        <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-3">
+          <h3 className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+            Resultados de la prueba
+          </h3>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
@@ -251,27 +221,29 @@ export const BenchmarkView: React.FC = () => {
                 <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400">
                   <th className="pb-3 font-medium">Nivel</th>
                   <th className="pb-3 font-medium">Backend</th>
-                  <th className="pb-3 font-medium">Carga (ms)</th>
+                  <th className="pb-3 font-medium">Carga</th>
                   <th className="pb-3 font-medium">Transcripción</th>
-                  <th className="pb-3 font-medium">RTF (Real-Time Factor)</th>
-                  <th className="pb-3 font-medium">WER</th>
+                  <th className="pb-3 font-medium">RTF (Velocidad)</th>
                   <th className="pb-3 font-medium">Texto transcrito</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                 {results.map((res, i) => (
                   <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
-                    <td className="py-3 font-semibold text-slate-900 dark:text-slate-100">{res.tier}</td>
-                    <td className="py-3 font-mono">{res.deviceBackend}</td>
+                    <td className="py-3 font-semibold text-slate-900 dark:text-slate-100">
+                      {res.tier === 'balanced' ? 'whisper-small' : res.tier === 'max' ? 'whisper-large-v3-turbo' : res.tier}
+                    </td>
+                    <td className="py-3 font-mono">
+                      <span className="uppercase px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 font-semibold text-slate-700 dark:text-slate-300 text-[10px]">
+                        {res.deviceBackend}
+                      </span>
+                    </td>
                     <td className="py-3 font-mono tabular-nums">{res.loadTimeMs} ms</td>
                     <td className="py-3 font-mono tabular-nums">{res.transcriptionTimeMs} ms</td>
                     <td className="py-3 font-mono tabular-nums font-semibold text-teal-600">
                       {res.realTimeFactor}x
                     </td>
-                    <td className="py-3 font-mono tabular-nums">
-                      {res.wordErrorRate !== undefined ? `${res.wordErrorRate}%` : 'N/A'}
-                    </td>
-                    <td className="py-3 text-slate-700 dark:text-slate-300 max-w-xs truncate">
+                    <td className="py-3 text-slate-700 dark:text-slate-300 max-w-sm truncate">
                       {res.transcribedText || '(Vacío)'}
                     </td>
                   </tr>
@@ -281,38 +253,9 @@ export const BenchmarkView: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 };
 
-// Word Error Rate calculation (Levenshtein distance over word tokens)
-function computeWer(ref: string, hyp: string): number {
-  const refWords = ref.toLowerCase().replace(/[.,!?:;¡¿"'-]/g, '').split(/\s+/).filter(Boolean);
-  const hypWords = hyp.toLowerCase().replace(/[.,!?:;¡¿"'-]/g, '').split(/\s+/).filter(Boolean);
-
-  if (refWords.length === 0) return 0;
-
-  const dp: number[][] = Array(refWords.length + 1)
-    .fill(null)
-    .map(() => Array(hypWords.length + 1).fill(0));
-
-  for (let i = 0; i <= refWords.length; i++) dp[i][0] = i;
-  for (let j = 0; j <= hypWords.length; j++) dp[0][j] = j;
-
-  for (let i = 1; i <= refWords.length; i++) {
-    for (let j = 1; j <= hypWords.length; j++) {
-      if (refWords[i - 1] === hypWords[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1];
-      } else {
-        dp[i][j] = Math.min(
-          dp[i - 1][j] + 1,     // deletion
-          dp[i][j - 1] + 1,     // insertion
-          dp[i - 1][j - 1] + 1  // substitution
-        );
-      }
-    }
-  }
-
-  const distance = dp[refWords.length][hypWords.length];
-  return Math.round((distance / refWords.length) * 100);
-}
+// Backwards-compatibility alias
+export const BenchmarkView = BenchmarkSection;

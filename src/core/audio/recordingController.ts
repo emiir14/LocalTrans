@@ -1,5 +1,6 @@
 import { IAudioStore, ISessionRepository } from '../interfaces';
 import { AudioChunk, Session } from '../types';
+import { wakeLockManager } from '../utils/wakeLockManager';
 
 export interface VuData {
   rms: number;
@@ -38,8 +39,6 @@ export class RecordingController {
   private lastSoundDetectedAt = 0;
   private silenceCheckInterval: any = null;
   private silenceWarningActive = false;
-
-  private wakeLock: any = null;
   private callbacks: Partial<RecordingCallbacks> = {};
 
   constructor(
@@ -377,31 +376,13 @@ export class RecordingController {
   }
 
   private async requestWakeLock() {
-    if (typeof navigator !== 'undefined' && 'wakeLock' in navigator) {
-      try {
-        this.wakeLock = await (navigator as any).wakeLock.request('screen');
-        this.callbacks.onWakeLockChange?.(true);
-        this.wakeLock.addEventListener('release', () => {
-          this.callbacks.onWakeLockChange?.(false);
-        });
-      } catch {
-        this.callbacks.onWakeLockChange?.(false);
-      }
-    } else {
-      this.callbacks.onWakeLockChange?.(false);
-    }
+    await wakeLockManager.acquire('recording');
+    this.callbacks.onWakeLockChange?.(wakeLockManager.isActive());
   }
 
   private async releaseWakeLock() {
-    if (this.wakeLock) {
-      try {
-        await this.wakeLock.release();
-      } catch {
-        // ignore
-      }
-      this.wakeLock = null;
-      this.callbacks.onWakeLockChange?.(false);
-    }
+    await wakeLockManager.release('recording');
+    this.callbacks.onWakeLockChange?.(wakeLockManager.isActive());
   }
 
   private handleVisibilityChange = async () => {

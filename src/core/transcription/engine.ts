@@ -2,6 +2,7 @@ import { ITranscriptionEngine, TranscriptionResult } from '../interfaces';
 import { ModelTier } from '../types';
 import { detectCorruptOutput } from './corruptionHeuristics';
 import { detectHardwareCapabilities, resolveTier, TIER_CONFIGS } from './tierDetector';
+import { wakeLockManager } from '../utils/wakeLockManager';
 
 export interface ProgressCallbackData {
   status: string;
@@ -61,13 +62,18 @@ export class WhisperTranscriptionEngine implements ITranscriptionEngine {
       }
     }
 
-    const hardware = await detectHardwareCapabilities();
-    const resolution = resolveTier(tier, hardware);
-    this.resolvedTier = resolution.tier;
-    this.activeBackend = resolution.backend;
+    await wakeLockManager.acquire('engine_load');
+    try {
+      const hardware = await detectHardwareCapabilities();
+      const resolution = resolveTier(tier, hardware);
+      this.resolvedTier = resolution.tier;
+      this.activeBackend = resolution.backend;
 
-    await this.initWorker(resolution.config.modelId, this.activeBackend, resolution.config.dtype, onProgress);
-    this.isLoaded = true;
+      await this.initWorker(resolution.config.modelId, this.activeBackend, resolution.config.dtype, onProgress);
+      this.isLoaded = true;
+    } finally {
+      await wakeLockManager.release('engine_load');
+    }
   }
 
   private async initWorker(

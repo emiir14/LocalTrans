@@ -23,6 +23,7 @@ import {
   ChevronUp,
   Cpu,
   Radio,
+  Sun,
 } from 'lucide-react';
 import { ExportFormatter, formatTimeDisplay } from '../core/export/formatter';
 import { TranscriptSegment } from '../core/types';
@@ -51,6 +52,7 @@ export const DetailView: React.FC = () => {
     deleteAudioForSession,
     openConfirm,
     showToast,
+    wakeLockActive,
   } = useAppStore();
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -451,12 +453,23 @@ export const DetailView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Engine Hardware Badge */}
+                {/* Engine Hardware & Wake Lock Badges */}
                 {isTranscribingThisSession && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center gap-1">
-                    <Cpu className="w-3 h-3 text-teal-600" />
-                    {transcriptionProgress?.activeBackend ? transcriptionProgress.activeBackend.toUpperCase() : 'LOCAL'}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {wakeLockActive && (
+                      <span
+                        className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-900/60 flex items-center gap-1"
+                        title="La pantalla se mantendrá activa mientras transcribe para evitar que el teléfono se bloquee"
+                      >
+                        <Sun className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                        <span>Pantalla activa</span>
+                      </span>
+                    )}
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center gap-1">
+                      <Cpu className="w-3 h-3 text-teal-600" />
+                      {transcriptionProgress?.activeBackend ? transcriptionProgress.activeBackend.toUpperCase() : 'LOCAL'}
+                    </span>
+                  </div>
                 )}
               </div>
 

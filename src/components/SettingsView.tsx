@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import {
   Cpu,
   Mic,
-  Shield,
   BookOpen,
   HardDrive,
   Trash2,
@@ -18,6 +17,7 @@ import {
 import { detectHardwareCapabilities, HardwareCapabilities } from '../core/transcription/tierDetector';
 import { ModelTier } from '../core/types';
 import { useAppStore } from '../store/useAppStore';
+import { BenchmarkSection } from './BenchmarkView';
 
 export const SettingsView: React.FC = () => {
   const {
@@ -244,26 +244,25 @@ export const SettingsView: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
           {[
             {
-              id: 'auto',
-              label: 'Automático (whisper-small)',
-              desc: 'Configura el modelo de alta precisión clínica (whisper-small) con aceleración WebGPU o CPU multihilo.',
+              id: 'balanced' as const,
+              label: 'Estándar clínico (whisper-small) — Recomendado',
+              desc: 'Modelo de 244M parámetros (~140 MB). Balance óptimo entre velocidad y precisión terminológica para móviles y PCs.',
             },
             {
-              id: 'balanced',
-              label: 'Alta precisión clínica (whisper-small)',
-              desc: 'Modelo estándar recomendado (~140 MB). 244 millones de parámetros para captar terminología técnica con exactitud.',
-            },
-            {
-              id: 'max',
+              id: 'max' as const,
               label: 'Máxima resolución (whisper-large-v3-turbo)',
-              desc: 'Modelo de 800M parámetros (~350 MB) para la máxima fidelidad acústica. Requiere computadora potente con WebGPU.',
+              desc: 'Modelo de 800M parámetros (~350 MB). Máxima fidelidad acústica para consultas extensas o gabinetes con hardware potente.',
             },
           ].map((tier) => {
-            const isSelected = (settings?.modelTier || 'auto') === tier.id;
+            const currentTier = settings?.modelTier || 'balanced';
+            const isSelected =
+              tier.id === 'balanced'
+                ? currentTier === 'balanced' || currentTier === 'auto'
+                : currentTier === 'max';
             return (
               <button
                 key={tier.id}
-                onClick={() => handleTierChange(tier.id as ModelTier)}
+                onClick={() => handleTierChange(tier.id)}
                 className={`p-4 rounded-2xl text-left border transition-all ${
                   isSelected
                     ? 'border-teal-600 bg-teal-50/50 dark:bg-teal-950/30 ring-1 ring-teal-600'
@@ -689,6 +688,9 @@ export const SettingsView: React.FC = () => {
           </button>
         </div>
       </section>
+
+      {/* Section 6: Laboratorio de rendimiento y latencia */}
+      <BenchmarkSection />
     </div>
   );
 };
