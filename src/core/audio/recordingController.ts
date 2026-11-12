@@ -7,12 +7,6 @@ export interface VuData {
   peak: number;
 }
 
-export interface BatteryStatus {
-  supported: boolean;
-  level: number; // 0 - 100
-  charging: boolean;
-}
-
 export interface RecordingCallbacks {
   onTimeUpdate: (durationSec: number) => void;
   onVuUpdate: (vu: VuData) => void;
@@ -390,22 +384,6 @@ export class RecordingController {
       await this.requestWakeLock();
     }
   };
-
-  public static async getBatteryStatus(): Promise<BatteryStatus> {
-    if (typeof navigator !== 'undefined' && 'getBattery' in navigator) {
-      try {
-        const battery: any = await (navigator as any).getBattery();
-        return {
-          supported: true,
-          level: Math.round(battery.level * 100),
-          charging: battery.charging,
-        };
-      } catch {
-        // fallback
-      }
-    }
-    return { supported: false, level: 100, charging: true };
-  }
 
   /**
    * Import an existing audio file (mp3, wav, m4a, webm)

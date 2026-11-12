@@ -7,7 +7,7 @@ import { LocalGlossaryRepository } from '../adapters/local/LocalGlossaryReposito
 import { LocalSessionRepository } from '../adapters/local/LocalSessionRepository';
 import { LocalSettingsRepository } from '../adapters/local/LocalSettingsRepository';
 import { LocalTranscriptRepository } from '../adapters/local/LocalTranscriptRepository';
-import { BatteryStatus, RecordingController, VuData } from '../core/audio/recordingController';
+import { RecordingController, VuData } from '../core/audio/recordingController';
 import { getSharedWhisperEngine } from '../core/transcription/engine';
 import { PipelineProgress, TranscriptionPipeline } from '../core/transcription/pipeline';
 import { CLINICAL_WHISPER_INITIAL_PROMPT } from '../core/transcription/prompts';
@@ -144,7 +144,6 @@ interface AppState {
   lastSavedAt: number | null;
   silenceWarning: boolean;
   wakeLockActive: boolean;
-  battery: BatteryStatus;
 
   // Transcription State
   transcriptionPipeline: TranscriptionPipeline | null;
@@ -222,7 +221,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   lastSavedAt: null,
   silenceWarning: false,
   wakeLockActive: false,
-  battery: { supported: false, level: 100, charging: true },
 
   transcriptionPipeline: null,
   transcribingSessionId: null,
@@ -269,10 +267,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
 
     await get().loadSessions();
-
-    // Check battery
-    const batt = await RecordingController.getBatteryStatus();
-    set({ battery: batt });
 
     // Sync global wakeLock state across recording, downloading, and transcription
     wakeLockManager.subscribe((active) => {

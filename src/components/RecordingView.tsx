@@ -5,8 +5,6 @@ import {
   Play,
   Square,
   Trash2,
-  Battery,
-  BatteryCharging,
   Sun,
   AlertTriangle,
   HardDrive,
@@ -26,7 +24,6 @@ export const RecordingView: React.FC = () => {
     lastSavedAt,
     silenceWarning,
     wakeLockActive,
-    battery,
     pauseRecording,
     resumeRecording,
     nextPatient,
@@ -77,8 +74,8 @@ export const RecordingView: React.FC = () => {
           </span>
         </div>
 
-        {/* Battery & Screen Wake Lock */}
-        <div className="flex items-center gap-4">
+        {/* Screen Wake Lock */}
+        <div>
           {wakeLockActive ? (
             <div className="flex items-center gap-1.5 text-teal-700 dark:text-teal-400">
               <Sun className="w-3.5 h-3.5" />
@@ -88,17 +85,6 @@ export const RecordingView: React.FC = () => {
             <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
               <AlertTriangle className="w-3.5 h-3.5" />
               <span>Bloqueo no soportado</span>
-            </div>
-          )}
-
-          {battery.supported && (
-            <div className="flex items-center gap-1.5">
-              {battery.charging ? (
-                <BatteryCharging className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-              ) : (
-                <Battery className="w-4 h-4 text-slate-500" />
-              )}
-              <span className="font-mono tabular-nums">{battery.level}%</span>
             </div>
           )}
         </div>
