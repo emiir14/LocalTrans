@@ -29,8 +29,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
+          node-version: 22
 
       - name: Setup Rust stable (MSVC)
         uses: dtolnay/rust-toolchain@stable
@@ -42,10 +41,10 @@ jobs:
         with:
           version: '18.1'
 
-      - name: Setup Vulkan SDK (GPU acceleration for NVIDIA / AMD / Intel)
-        uses: humbletim/setup-vulkan-sdk@v1
+      - name: Setup Vulkan SDK (GPU acceleration + glslc shader compiler)
+        uses: jakoch/install-vulkan-sdk-action@v1.8.1
         with:
-          vulkan-version: '1.3.296.0'
+          cache: true
 
       - name: Rust & Cargo cache
         uses: Swatinem/rust-cache@v2
@@ -54,7 +53,7 @@ jobs:
           prefix-key: windows-vulkan
 
       - name: Install web dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Generate exact Windows & NSIS icons
         run: npx --yes @tauri-apps/cli@2 icon public/pwa-512x512.png
