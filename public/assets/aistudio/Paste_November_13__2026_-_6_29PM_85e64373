@@ -1,0 +1,1784 @@
+Run npx --yes @tauri-apps/cli@2 build --bundles nsis
+        Info Looking up installed tauri packages to check mismatched versions...
+     Running beforeBuildCommand `npm run build`
+
+> react-example@0.0.0 build
+> vite build
+
+vite v8.3.8 building client environment for production...
+transforming...
+✓ 1701 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/registerSW.js                                              0.13 kB
+dist/manifest.webmanifest                                       0.54 kB
+dist/index.html                                                 1.99 kB │ gzip:     0.77 kB
+dist/assets/whisperWorker-C3SrJJAW.js                         551.07 kB
+dist/assets/ort-wasm-simd-threaded.asyncify-CxOG5pUO.wasm  26,861.77 kB │ gzip: 6,762.79 kB
+dist/assets/index-CHyxbNyy.css                                 65.82 kB │ gzip:    10.52 kB
+dist/assets/index-Ca1I3Zg1.js                                 538.54 kB │ gzip:   152.43 kB
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 753ms
+
+PWA v2.0.0
+mode      generateSW
+precache  14 entries (27367.33 KiB)
+files generated
+  dist/sw.js
+  dist/workbox-9c191d2f.js
+    Updating crates.io index
+     Locking 509 packages to highest compatible versions
+      Adding base64 v0.22.1 (available: v0.23.1)
+      Adding generic-array v0.14.7 (available: v0.14.9)
+      Adding reqwest v0.12.28 (available: v0.13.5)
+      Adding toml v0.8.2 (available: v0.8.23)
+      Adding toml_datetime v0.6.3 (available: v0.6.11)
+      Adding toml_edit v0.20.2 (available: v0.20.7)
+ Downloading crates ...
+  Downloaded libloading v0.8.9
+  Downloaded potential_utf v0.1.6
+  Downloaded ipnet v2.12.2
+  Downloaded prettyplease v0.2.37
+  Downloaded itoa v1.0.19
+  Downloaded indexmap v1.9.3
+  Downloaded dyn-clone v1.0.20
+  Downloaded find-msvc-tools v0.1.15
+  Downloaded foldhash v0.2.0
+  Downloaded futures-channel v0.3.34
+  Downloaded mio v1.2.5
+  Downloaded jsonptr v0.7.1
+  Downloaded equivalent v1.0.3
+  Downloaded fastrand v2.5.0
+  Downloaded fnv v1.0.7
+  Downloaded phf v0.13.1
+  Downloaded fdeflate v0.3.7
+  Downloaded log v0.4.35
+  Downloaded powerfmt v0.2.1
+  Downloaded heck v0.5.0
+  Downloaded futures-sink v0.3.34
+  Downloaded form_urlencoded v1.2.2
+  Downloaded futures-task v0.3.34
+  Downloaded lru-slab v0.1.3
+  Downloaded quinn-proto v0.11.19
+  Downloaded glob v0.3.4
+  Downloaded hex v0.4.3
+  Downloaded alloc-no-stdlib v3.0.0
+  Downloaded erased-serde v0.4.11
+  Downloaded ident_case v1.0.1
+  Downloaded idna_adapter v1.2.2
+  Downloaded byteorder v1.5.0
+  Downloaded clang-sys v1.9.1
+  Downloaded zeroize v1.9.1
+  Downloaded bit-vec v0.8.0
+  Downloaded cfb v0.14.0
+  Downloaded windows-threading v0.2.1
+  Downloaded anyhow v1.0.104
+  Downloaded generic-array v0.14.7
+  Downloaded phf_codegen v0.13.1
+  Downloaded windows-collections v0.3.2
+  Downloaded zerofrom-derive v0.1.8
+  Downloaded adler2 v2.0.1
+  Downloaded alloc-stdlib v0.3.0
+  Downloaded darling v0.24.1
+  Downloaded bit-set v0.8.0
+  Downloaded want v0.3.2
+  Downloaded crossbeam-utils v0.8.23
+  Downloaded percent-encoding v2.3.2
+  Downloaded zerovec-derive v0.11.7
+  Downloaded derive_more-impl v2.1.1
+  Downloaded dirs v7.0.0
+  Downloaded phf_generator v0.13.1
+  Downloaded cfg-if v1.0.5
+  Downloaded fs_extra v1.3.0
+  Downloaded once_cell v1.21.4
+  Downloaded pin-project-lite v0.2.17
+  Downloaded getrandom v0.4.3
+  Downloaded jiff-tzdb-platform v0.1.3
+  Downloaded dtoa-short v0.3.5
+  Downloaded new_debug_unreachable v1.0.6
+  Downloaded option-ext v0.2.0
+  Downloaded futures-core v0.3.34
+  Downloaded futures-io v0.3.34
+  Downloaded http-body v1.1.0
+  Downloaded num-conv v0.2.2
+  Downloaded phf_shared v0.13.1
+  Downloaded precomputed-hash v0.1.1
+  Downloaded urlpattern v0.6.0
+  Downloaded utf8_iter v1.1.0
+  Downloaded windows-core v0.62.2
+  Downloaded zmij v1.0.23
+  Downloaded bytes v1.12.1
+  Downloaded futures-macro v0.3.34
+  Downloaded phf_macros v0.13.1
+  Downloaded block-buffer v0.10.4
+  Downloaded cssparser v0.37.0
+  Downloaded dirs-sys v0.5.0
+  Downloaded web_atoms v0.2.6
+  Downloaded base64 v0.23.1
+  Downloaded cfg_aliases v0.2.2
+  Downloaded ref-cast v1.0.27
+  Downloaded cpufeatures v0.3.1
+  Downloaded cssparser-macros v0.7.1
+  Downloaded dom_query v0.28.0
+  Downloaded windows-future v0.3.2
+  Downloaded yoke-derive v0.8.4
+  Downloaded zerovec v0.11.9
+  Downloaded bitflags v2.13.2
+  Downloaded camino v1.2.6
+  Downloaded darling_macro v0.24.1
+  Downloaded either v1.19.0
+  Downloaded httparse v1.10.1
+  Downloaded hyper-rustls v0.27.10
+  Downloaded parking_lot_core v0.9.12
+  Downloaded serde_spanned v1.1.3
+  Downloaded serialize-to-javascript v0.1.2
+  Downloaded infer v0.22.0
+  Downloaded lock_api v0.4.14
+  Downloaded markup5ever v0.39.0
+  Downloaded getrandom v0.2.17
+  Downloaded getrandom v0.3.4
+  Downloaded litemap v0.8.3
+  Downloaded jiff-tzdb v0.1.9
+  Downloaded json-patch v4.2.0
+  Downloaded http-body-util v0.1.5
+  Downloaded mime v0.3.18
+  Downloaded rustc_version v0.4.1
+  Downloaded windows-strings v0.5.1
+  Downloaded cargo-platform v0.1.9
+  Downloaded strsim v0.11.1
+  Downloaded vswhom-sys v0.1.3
+  Downloaded windows-interface v0.59.3
+  Downloaded windows-result v0.4.1
+  Downloaded parking_lot v0.12.5
+  Downloaded icu_normalizer_data v2.4.0
+  Downloaded schemars_derive v0.8.22
+  Downloaded scopeguard v1.2.0
+  Downloaded siphasher v1.0.4
+  Downloaded shlex v2.0.1
+  Downloaded vswhom v0.1.0
+  Downloaded windows-implement v0.60.2
+  Downloaded windows-link v0.2.1
+  Downloaded windows-version v0.1.7
+  Downloaded bs58 v0.5.1
+  Downloaded plist v1.10.3
+  Downloaded proc-macro2 v1.0.107
+  Downloaded shlex v1.3.0
+  Downloaded miniz_oxide v0.9.1
+  Downloaded simd-adler32 v0.3.10
+  Downloaded embed-resource v3.0.12
+  Downloaded ico v0.6.0
+  Downloaded thiserror v2.0.21
+  Downloaded toml_writer v1.2.0+spec-1.1.0
+  Downloaded num-traits v0.2.19
+  Downloaded version_check v0.9.5
+  Downloaded web-time v1.1.0
+  Downloaded autocfg v1.5.1
+  Downloaded cargo_metadata v0.19.2
+  Downloaded cmake v0.1.58
+  Downloaded tinystr v0.8.5
+  Downloaded html5ever v0.39.0
+  Downloaded nom v7.1.3
+  Downloaded icu_provider v2.4.0
+  Downloaded tauri-build v2.7.4
+  Downloaded minimal-lexical v0.2.1
+  Downloaded tauri-codegen v2.7.4
+  Downloaded webview2-com-macros v0.8.1
+  Downloaded winapi-util v0.1.11
+  Downloaded cpufeatures v0.2.17
+  Downloaded dpi v0.1.2
+  Downloaded hashbrown v0.12.3
+  Downloaded icu_collections v2.4.0
+  Downloaded icu_locale_core v2.4.0
+  Downloaded miniz_oxide v0.8.9
+  Downloaded ryu v1.0.23
+  Downloaded schemars v1.2.3
+  Downloaded unicode-ident v1.0.27
+  Downloaded flate2 v1.1.11
+  Downloaded memchr v2.8.3
+  Downloaded quinn v0.11.12
+  Downloaded http v1.5.0
+  Downloaded indexmap v2.14.2
+  Downloaded rand v0.10.3
+  Downloaded ref-cast-impl v1.0.27
+  Downloaded tray-icon v0.25.1
+  Downloaded unicode-segmentation v1.13.3
+  Downloaded keyboard-types v0.8.3
+  Downloaded muda v0.20.0
+  Downloaded base64 v0.22.1
+  Downloaded hyper-util v0.1.21
+  Downloaded idna v1.1.0
+  Downloaded itertools v0.13.0
+  Downloaded jiff-core v0.1.5
+  Downloaded png v0.18.1
+  Downloaded raw-window-handle v0.6.2
+  Downloaded icu_properties v2.4.0
+  Downloaded futures-util v0.3.34
+  Downloaded hashbrown v0.17.1
+  Downloaded hyper v1.12.0
+  Downloaded cargo_toml v1.0.1
+  Downloaded cookie v0.18.2
+  Downloaded deranged v0.5.9
+  Downloaded windows-numerics v0.3.1
+  Downloaded zerofrom v0.1.8
+  Downloaded darling_core v0.24.1
+  Downloaded icu_properties_data v2.4.0
+  Downloaded tauri-utils v2.10.2
+  Downloaded tokio-util v0.7.20
+  Downloaded writeable v0.6.4
+  Downloaded crypto-common v0.1.7
+  Downloaded displaydoc v0.2.7
+  Downloaded utf_types v1.0.0
+  Downloaded webview2-com v0.39.1
+  Downloaded cexpr v0.6.0
+  Downloaded winreg v0.56.0
+  Downloaded yoke v0.8.4
+  Downloaded aho-corasick v1.1.5
+  Downloaded atomic-waker v1.1.2
+  Downloaded crc32fast v1.5.5
+  Downloaded ctor v1.0.13
+  Downloaded rand_pcg v0.10.2
+  Downloaded walkdir v2.5.0
+  Downloaded string_cache_codegen v0.6.1
+  Downloaded whisper-rs v0.16.0
+  Downloaded bindgen v0.72.1
+  Downloaded chacha20 v0.10.2
+  Downloaded derive_more v2.1.1
+  Downloaded quick-xml v0.42.0
+  Downloaded cc v1.11.2
+  Downloaded crossbeam-channel v0.5.17
+  Downloaded uuid v1.29.2
+  Downloaded zerotrie v0.2.5
+  Downloaded digest v0.10.7
+  Downloaded tauri-plugin-process v2.4.0
+  Downloaded tower-service v0.3.3
+  Downloaded try-lock v0.2.5
+  Downloaded regex-syntax v0.8.11
+  Downloaded synstructure v0.14.0
+  Downloaded rand_core v0.10.1
+  Downloaded webpki-roots v1.0.12
+  Downloaded rustls-pki-types v1.16.0
+  Downloaded serde_derive_internals v0.29.1
+  Downloaded subtle v2.6.1
+  Downloaded zlib-rs v0.6.8
+  Downloaded servo_arc v0.4.3
+  Downloaded tower v0.5.3
+  Downloaded tinyvec v1.13.3
+  Downloaded winnow v1.0.5
+  Downloaded chrono v0.4.45
+  Downloaded schemars v0.8.22
+  Downloaded softbuffer v0.4.8
+  Downloaded wry v0.57.2
+  Downloaded icu_normalizer v2.4.0
+  Downloaded semver v1.0.28
+  Downloaded string_cache v0.9.0
+  Downloaded sync_wrapper v1.0.2
+  Downloaded toml_parser v1.1.5+spec-1.1.0
+  Downloaded jiff v0.2.43
+  Downloaded rustc-hash v2.1.3
+  Downloaded syn v3.0.10
+  Downloaded time-macros v0.2.32
+  Downloaded brotli-decompressor v6.3.1
+  Downloaded serde-untagged v0.1.9
+  Downloaded sha2 v0.10.9
+  Downloaded libc v0.2.191
+  Downloaded serde_with v3.24.0
+  Downloaded typenum v1.20.1
+  Downloaded tauri-runtime-wry v2.12.3
+  Downloaded serialize-to-javascript-impl v0.1.2
+  Downloaded tower-http v0.6.11
+  Downloaded serde v1.0.229
+  Downloaded toml_datetime v1.1.3+spec-1.1.0
+  Downloaded untrusted v0.9.0
+  Downloaded tracing-attributes v0.1.31
+  Downloaded static_vcruntime v3.0.0
+  Downloaded typeid v1.0.3
+  Downloaded selectors v0.38.0
+  Downloaded toml v1.2.1+spec-1.1.0
+  Downloaded serde_repr v0.1.21
+  Downloaded regex v1.13.1
+  Downloaded same-file v1.0.6
+  Downloaded serde_urlencoded v0.7.1
+  Downloaded serde_with_macros v3.24.0
+  Downloaded tracing-core v0.1.36
+  Downloaded tracing v0.1.44
+  Downloaded tauri-plugin-single-instance v2.5.5
+  Downloaded tao v0.37.2
+  Downloaded serde_derive v1.0.229
+  Downloaded tauri-runtime v2.12.2
+  Downloaded dtoa v1.0.11
+  Downloaded tower-layer v0.3.3
+  Downloaded quote v1.0.47
+  Downloaded rustls v0.23.46
+  Downloaded tauri-macros v2.7.4
+  Downloaded url v2.5.8
+  Downloaded tauri-plugin v2.7.2
+  Downloaded serde_json v1.0.154
+  Downloaded regex-automata v0.4.18
+  Downloaded smallvec v1.16.5
+  Downloaded tauri-winres v0.3.7
+  Downloaded ring v0.17.14
+  Downloaded slab v0.4.12
+  Downloaded time-core v0.1.9
+  Downloaded dunce v1.0.5
+  Downloaded tendril v0.5.1
+  Downloaded stable_deref_trait v1.2.1
+  Downloaded thiserror-impl v2.0.21
+  Downloaded serde_core v1.0.229
+  Downloaded quinn-udp v0.5.16
+  Downloaded tokio-rustls v0.26.6
+  Downloaded schemars v0.9.0
+  Downloaded rustls-webpki v0.103.17
+  Downloaded socket2 v0.6.5
+  Downloaded reqwest v0.12.28
+  Downloaded syn v2.0.119
+  Downloaded brotli v9.1.1
+  Downloaded time v0.3.55
+  Downloaded tauri v2.12.5
+  Downloaded window-vibrancy v0.8.1
+  Downloaded windows-sys v0.61.2
+  Downloaded whisper-rs-sys v0.15.0
+  Downloaded tokio v1.54.1
+  Downloaded webview2-com-sys v0.39.1
+  Downloaded windows v0.62.2
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.27
+   Compiling quote v1.0.47
+   Compiling serde_core v1.0.229
+   Compiling windows-link v0.2.1
+   Compiling cfg-if v1.0.5
+   Compiling icu_normalizer_data v2.4.0
+   Compiling icu_properties_data v2.4.0
+   Compiling siphasher v1.0.4
+   Compiling phf_shared v0.13.1
+   Compiling fastrand v2.5.0
+   Compiling syn v3.0.10
+   Compiling syn v2.0.119
+   Compiling memchr v2.8.3
+   Compiling phf_generator v0.13.1
+   Compiling stable_deref_trait v1.2.1
+   Compiling thiserror v2.0.21
+   Compiling find-msvc-tools v0.1.15
+   Compiling shlex v2.0.1
+   Compiling cc v1.11.2
+   Compiling zmij v1.0.23
+   Compiling smallvec v1.16.5
+   Compiling libc v0.2.191
+   Compiling synstructure v0.14.0
+   Compiling parking_lot_core v0.9.12
+   Compiling windows-sys v0.61.2
+   Compiling serde v1.0.229
+   Compiling typeid v1.0.3
+   Compiling zerofrom-derive v0.1.8
+   Compiling yoke-derive v0.8.4
+   Compiling zerovec-derive v0.11.7
+   Compiling serde_derive v1.0.229
+   Compiling displaydoc v0.2.7
+   Compiling zerofrom v0.1.8
+   Compiling thiserror-impl v2.0.21
+   Compiling yoke v0.8.4
+   Compiling zerovec v0.11.9
+   Compiling phf_macros v0.13.1
+   Compiling semver v1.0.28
+   Compiling log v0.4.35
+   Compiling num-conv v0.2.2
+   Compiling time-core v0.1.9
+   Compiling glob v0.3.4
+   Compiling bitflags v2.13.2
+   Compiling tinystr v0.8.5
+   Compiling phf_codegen v0.13.1
+   Compiling aho-corasick v1.1.5
+   Compiling litemap v0.8.3
+   Compiling erased-serde v0.4.11
+   Compiling utf_types v1.0.0
+   Compiling ident_case v1.0.1
+   Compiling strsim v0.11.1
+   Compiling regex-syntax v0.8.11
+   Compiling writeable v0.6.4
+   Compiling itoa v1.0.19
+   Compiling icu_locale_core v2.4.0
+   Compiling darling_core v0.24.1
+   Compiling utf8_iter v1.1.0
+   Compiling potential_utf v0.1.6
+   Compiling zerotrie v0.2.5
+   Compiling rustc-hash v2.1.3
+   Compiling regex-automata v0.4.18
+   Compiling icu_provider v2.4.0
+   Compiling icu_collections v2.4.0
+   Compiling darling_macro v0.24.1
+   Compiling regex v1.13.1
+   Compiling scopeguard v1.2.0
+   Compiling anyhow v1.0.104
+   Compiling new_debug_unreachable v1.0.6
+   Compiling lock_api v0.4.14
+   Compiling darling v0.24.1
+   Compiling phf v0.13.1
+   Compiling string_cache_codegen v0.6.1
+   Compiling serde_json v1.0.154
+   Compiling getrandom v0.4.3
+   Compiling precomputed-hash v0.1.1
+   Compiling web_atoms v0.2.6
+   Compiling parking_lot v0.12.5
+   Compiling serde_with_macros v3.24.0
+   Compiling icu_properties v2.4.0
+   Compiling icu_normalizer v2.4.0
+   Compiling winnow v1.0.5
+   Compiling bytes v1.12.1
+   Compiling toml_parser v1.1.5+spec-1.1.0
+   Compiling idna_adapter v1.2.2
+   Compiling string_cache v0.9.0
+   Compiling toml_datetime v1.1.3+spec-1.1.0
+   Compiling serde_spanned v1.1.3
+   Compiling dtoa v1.0.11
+   Compiling toml_writer v1.2.0+spec-1.1.0
+   Compiling autocfg v1.5.1
+   Compiling version_check v0.9.5
+   Compiling percent-encoding v2.3.2
+   Compiling form_urlencoded v1.2.2
+   Compiling toml v1.2.1+spec-1.1.0
+   Compiling indexmap v1.9.3
+   Compiling dtoa-short v0.3.5
+   Compiling uuid v1.29.2
+   Compiling idna v1.1.0
+   Compiling tendril v0.5.1
+   Compiling selectors v0.38.0
+   Compiling derive_more-impl v2.1.1
+   Compiling cssparser-macros v0.7.1
+   Compiling alloc-no-stdlib v3.0.0
+   Compiling pin-project-lite v0.2.17
+   Compiling camino v1.2.6
+   Compiling cssparser v0.37.0
+   Compiling alloc-stdlib v0.3.0
+   Compiling derive_more v2.1.1
+   Compiling markup5ever v0.39.0
+   Compiling url v2.5.8
+   Compiling winapi-util v0.1.11
+   Compiling serde_derive_internals v0.29.1
+   Compiling servo_arc v0.4.3
+   Compiling hashbrown v0.12.3
+   Compiling hashbrown v0.17.1
+   Compiling fnv v1.0.7
+   Compiling deranged v0.5.9
+   Compiling equivalent v1.0.3
+   Compiling bit-vec v0.8.0
+   Compiling schemars v0.8.22
+   Compiling powerfmt v0.2.1
+   Compiling web-time v1.1.0
+   Compiling cfb v0.14.0
+   Compiling bit-set v0.8.0
+   Compiling indexmap v2.14.2
+   Compiling schemars_derive v0.8.22
+   Compiling time v0.3.55
+   Compiling same-file v1.0.6
+   Compiling html5ever v0.39.0
+   Compiling brotli-decompressor v6.3.1
+   Compiling jsonptr v0.7.1
+   Compiling cargo-platform v0.1.9
+   Compiling quick-xml v0.42.0
+   Compiling base64 v0.23.1
+   Compiling dyn-clone v1.0.20
+   Compiling tauri-utils v2.10.2
+   Compiling dunce v1.0.5
+   Compiling foldhash v0.2.0
+   Compiling dom_query v0.28.0
+   Compiling plist v1.10.3
+   Compiling http v1.5.0
+   Compiling brotli v9.1.1
+   Compiling json-patch v4.2.0
+   Compiling cargo_metadata v0.19.2
+   Compiling serde-untagged v0.1.9
+   Compiling walkdir v2.5.0
+   Compiling infer v0.22.0
+   Compiling urlpattern v0.6.0
+   Compiling serde_with v3.24.0
+   Compiling windows-implement v0.60.2
+   Compiling windows-interface v0.59.3
+   Compiling vswhom-sys v0.1.3
+   Compiling windows-result v0.4.1
+   Compiling windows-strings v0.5.1
+   Compiling once_cell v1.21.4
+   Compiling ctor v1.0.13
+   Compiling windows-core v0.62.2
+   Compiling mio v1.2.5
+   Compiling socket2 v0.6.5
+   Compiling tokio v1.54.1
+   Compiling vswhom v0.1.0
+   Compiling generic-array v0.14.7
+   Compiling winreg v0.56.0
+   Compiling rustc_version v0.4.1
+   Compiling windows-threading v0.2.1
+   Compiling simd-adler32 v0.3.10
+   Compiling futures-core v0.3.34
+   Compiling option-ext v0.2.0
+   Compiling dirs-sys v0.5.0
+   Compiling windows-future v0.3.2
+   Compiling embed-resource v3.0.12
+   Compiling windows-collections v0.3.2
+   Compiling windows-numerics v0.3.1
+   Compiling time-macros v0.2.32
+   Compiling typenum v1.20.1
+   Compiling adler2 v2.0.1
+   Compiling crc32fast v1.5.5
+   Compiling crossbeam-utils v0.8.23
+   Compiling heck v0.5.0
+   Compiling windows v0.62.2
+   Compiling tauri-winres v0.3.7
+   Compiling dirs v7.0.0
+   Compiling tracing-core v0.1.36
+   Compiling cargo_toml v1.0.1
+   Compiling dpi v0.1.2
+   Compiling webview2-com-sys v0.39.1
+   Compiling clang-sys v1.9.1
+   Compiling tracing-attributes v0.1.31
+   Compiling raw-window-handle v0.6.2
+   Compiling static_vcruntime v3.0.0
+   Compiling prettyplease v0.2.37
+   Compiling tauri-build v2.7.4
+   Compiling tracing v0.1.44
+   Compiling miniz_oxide v0.9.1
+   Compiling cookie v0.18.2
+   Compiling ring v0.17.14
+   Compiling minimal-lexical v0.2.1
+   Compiling nom v7.1.3
+   Compiling flate2 v1.1.11
+   Compiling crossbeam-channel v0.5.17
+   Compiling crypto-common v0.1.7
+   Compiling block-buffer v0.10.4
+   Compiling miniz_oxide v0.8.9
+   Compiling fdeflate v0.3.7
+   Compiling webview2-com-macros v0.8.1
+   Compiling libloading v0.8.9
+   Compiling windows-version v0.1.7
+   Compiling zeroize v1.9.1
+   Compiling either v1.19.0
+   Compiling bindgen v0.72.1
+   Compiling itertools v0.13.0
+   Compiling rustls-pki-types v1.16.0
+   Compiling png v0.18.1
+   Compiling digest v0.10.7
+   Compiling cexpr v0.6.0
+   Compiling tauri v2.12.5
+   Compiling http-body v1.1.0
+   Compiling getrandom v0.2.17
+   Compiling futures-macro v0.3.34
+   Compiling webview2-com v0.39.1
+   Compiling wry v0.57.2
+   Compiling tauri-runtime v2.12.2
+   Compiling httparse v1.10.1
+   Compiling byteorder v1.5.0
+   Compiling futures-task v0.3.34
+   Compiling shlex v1.3.0
+   Compiling muda v0.20.0
+   Compiling cpufeatures v0.2.17
+   Compiling slab v0.4.12
+   Compiling untrusted v0.9.0
+   Compiling futures-util v0.3.34
+   Compiling sha2 v0.10.9
+   Compiling ico v0.6.0
+   Compiling keyboard-types v0.8.3
+   Compiling cmake v0.1.58
+   Compiling fs_extra v1.3.0
+   Compiling try-lock v0.2.5
+   Compiling tauri-runtime-wry v2.12.3
+   Compiling getrandom v0.3.4
+   Compiling tray-icon v0.25.1
+   Compiling rustls v0.23.46
+   Compiling unicode-segmentation v1.13.3
+   Compiling tower-service v0.3.3
+   Compiling want v0.3.2
+   Compiling tao v0.37.2
+   Compiling whisper-rs-sys v0.15.0
+   Compiling tauri-codegen v2.7.4
+   Compiling rustls-webpki v0.103.17
+   Compiling softbuffer v0.4.8
+   Compiling tauri-plugin v2.7.2
+   Compiling serialize-to-javascript-impl v0.1.2
+   Compiling subtle v2.6.1
+   Compiling atomic-waker v1.1.2
+   Compiling hyper v1.12.0
+   Compiling serialize-to-javascript v0.1.2
+   Compiling tauri-plugin-process v2.4.0
+   Compiling tauri-macros v2.7.4
+   Compiling window-vibrancy v0.8.1
+   Compiling futures-channel v0.3.34
+   Compiling sync_wrapper v1.0.2
+   Compiling serde_repr v0.1.21
+   Compiling mime v0.3.18
+   Compiling tower-layer v0.3.3
+   Compiling ipnet v2.12.2
+   Compiling hyper-util v0.1.21
+   Compiling tower v0.5.3
+   Compiling tokio-rustls v0.26.6
+   Compiling webpki-roots v1.0.12
+   Compiling ryu v1.0.23
+   Compiling whisper-rs v0.16.0
+   Compiling futures-sink v0.3.34
+   Compiling tokio-util v0.7.20
+   Compiling serde_urlencoded v0.7.1
+   Compiling hyper-rustls v0.27.10
+   Compiling tower-http v0.6.11
+   Compiling http-body-util v0.1.5
+   Compiling escriba v1.0.0 (D:\a\LocalTrans\LocalTrans\src-tauri)
+   Compiling base64 v0.22.1
+   Compiling reqwest v0.12.28
+   Compiling tauri-plugin-single-instance v2.5.5
+error: failed to run custom build command for `whisper-rs-sys v0.15.0`
+
+Caused by:
+  process didn't exit successfully: `D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys/d12ac92678549b52\out\build_script_build` (exit code: 101)
+  --- stdout
+  cargo:rerun-if-changed=wrapper.h
+  cargo:rerun-if-env-changed=TARGET
+  cargo:rerun-if-env-changed=BINDGEN_EXTRA_CLANG_ARGS_x86_64-pc-windows-msvc
+  cargo:rerun-if-env-changed=BINDGEN_EXTRA_CLANG_ARGS_x86_64_pc_windows_msvc
+  cargo:rerun-if-env-changed=BINDGEN_EXTRA_CLANG_ARGS
+  cargo:rerun-if-changed=wrapper.h
+  cargo:rerun-if-changed=whisper.cpp/ggml/include/ggml-vulkan.h
+  cargo:rerun-if-changed=./whisper.cpp\include/whisper.h
+  cargo:rerun-if-changed=./whisper.cpp/ggml/include\ggml.h
+  cargo:rerun-if-changed=C:\Program Files\LLVM\lib\clang\18\include\stdbool.h
+  cargo:rerun-if-changed=C:\Program Files\LLVM\lib\clang\18\include\stddef.h
+  cargo:rerun-if-changed=C:\Program Files\LLVM\lib\clang\18\include\__stddef_ptrdiff_t.h
+  cargo:rerun-if-changed=C:\Program Files\LLVM\lib\clang\18\include\__stddef_size_t.h
+  cargo:rerun-if-changed=C:\Program Files\LLVM\lib\clang\18\include\__stddef_wchar_t.h
+  cargo:rerun-if-changed=C:\Program Files\LLVM\lib\clang\18\include\__stddef_null.h
+  cargo:rerun-if-changed=C:\Program Files\LLVM\lib\clang\18\include\__stddef_max_align_t.h
+  cargo:rerun-if-changed=C:\Program Files\LLVM\lib\clang\18\include\__stddef_offsetof.h
+  cargo:rerun-if-changed=C:\Program Files\LLVM\lib\clang\18\include\stdint.h
+  cargo:rerun-if-changed=C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\stdint.h
+  cargo:rerun-if-changed=C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\vcruntime.h
+  cargo:rerun-if-changed=C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\sal.h
+  cargo:rerun-if-changed=C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\concurrencysal.h
+  cargo:rerun-if-changed=C:\Program Files\LLVM\lib\clang\18\include\vadefs.h
+  cargo:rerun-if-changed=C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\vadefs.h
+  cargo:rerun-if-changed=C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\ucrt\stdio.h
+  cargo:rerun-if-changed=C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\ucrt\corecrt.h
+  cargo:rerun-if-changed=C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\include\vcruntime.h
+  cargo:rerun-if-changed=C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\ucrt\corecrt_wstdio.h
+  cargo:rerun-if-changed=C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\ucrt\corecrt.h
+  cargo:rerun-if-changed=C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\ucrt\corecrt_stdio_config.h
+  cargo:rerun-if-changed=C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\ucrt\corecrt.h
+  cargo:rerun-if-changed=./whisper.cpp/ggml/include\ggml-cpu.h
+  cargo:rerun-if-changed=./whisper.cpp/ggml/include\ggml.h
+  cargo:rerun-if-changed=./whisper.cpp/ggml/include\ggml-backend.h
+  cargo:rerun-if-changed=./whisper.cpp/ggml/include\ggml.h
+  cargo:rerun-if-changed=./whisper.cpp/ggml/include\ggml-alloc.h
+  cargo:rerun-if-changed=./whisper.cpp/ggml/include\ggml.h
+  cargo:rerun-if-changed=C:\Program Files\LLVM\lib\clang\18\include\stddef.h
+  cargo:rerun-if-changed=C:\Program Files\LLVM\lib\clang\18\include\stdint.h
+  cargo:rerun-if-changed=C:\Program Files\LLVM\lib\clang\18\include\stdbool.h
+  cargo:rerun-if-changed=./whisper.cpp\ggml/include/ggml.h
+  cargo:rerun-if-changed=./whisper.cpp/ggml/include\ggml-vulkan.h
+  cargo:rerun-if-changed=whisper.cpp/ggml/include\ggml.h
+  cargo:rerun-if-changed=whisper.cpp/ggml/include\ggml-backend.h
+  cargo:rerun-if-changed=whisper.cpp/ggml/include\ggml.h
+  cargo:rerun-if-changed=whisper.cpp/ggml/include\ggml-backend.h
+  cargo:rustc-link-lib=advapi32
+  cargo:rerun-if-env-changed=VULKAN_SDK
+  cargo:rustc-link-lib=vulkan-1
+  cargo:rustc-link-search=C:\VulkanSDK\1.4.363.1\Lib
+  CMAKE_TOOLCHAIN_FILE_x86_64-pc-windows-msvc = None
+  CMAKE_TOOLCHAIN_FILE_x86_64_pc_windows_msvc = None
+  HOST_CMAKE_TOOLCHAIN_FILE = None
+  CMAKE_TOOLCHAIN_FILE = None
+  CMAKE_GENERATOR_x86_64-pc-windows-msvc = None
+  CMAKE_GENERATOR_x86_64_pc_windows_msvc = None
+  HOST_CMAKE_GENERATOR = None
+  CMAKE_GENERATOR = None
+  CMAKE_PREFIX_PATH_x86_64-pc-windows-msvc = None
+  CMAKE_PREFIX_PATH_x86_64_pc_windows_msvc = None
+  HOST_CMAKE_PREFIX_PATH = None
+  CMAKE_PREFIX_PATH = None
+  CMAKE_x86_64-pc-windows-msvc = None
+  CMAKE_x86_64_pc_windows_msvc = None
+  HOST_CMAKE = None
+  CMAKE = None
+  Running with debug output on.
+  -- The C compiler identification is MSVC 19.51.36260.0
+     Called from: [3]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/CMakeLists.txt
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCCompiler.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCompilerId.cmake
+  -- The CXX compiler identification is MSVC 19.51.36260.0
+     Called from: [3]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/CMakeLists.txt
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCXXCompiler.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCompilerId.cmake
+  -- Detecting C compiler ABI info
+     Called from: [3]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/CMakeLists.txt
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeTestCCompiler.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCompilerABI.cmake
+  -- Detecting C compiler ABI info - done
+     Called from: [3]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/CMakeLists.txt
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeTestCCompiler.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCompilerABI.cmake
+  -- Check for working C compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+     Called from: [2]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/CMakeLists.txt
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeTestCCompiler.cmake
+  -- Detecting C compile features
+     Called from: [3]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/CMakeLists.txt
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeTestCCompiler.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCompilerSupport.cmake
+  -- Detecting C compile features - done
+     Called from: [3]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/CMakeLists.txt
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeTestCCompiler.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCompilerSupport.cmake
+  -- Detecting CXX compiler ABI info
+     Called from: [3]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/CMakeLists.txt
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeTestCXXCompiler.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCompilerABI.cmake
+  -- Detecting CXX compiler ABI info - done
+     Called from: [3]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/CMakeLists.txt
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeTestCXXCompiler.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCompilerABI.cmake
+  -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+     Called from: [2]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/CMakeLists.txt
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeTestCXXCompiler.cmake
+  -- Detecting CXX compile features
+     Called from: [3]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/CMakeLists.txt
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeTestCXXCompiler.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCompilerSupport.cmake
+  -- Detecting CXX compile features - done
+     Called from: [3]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/CMakeLists.txt
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeTestCXXCompiler.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCompilerSupport.cmake
+  -- Found Git: C:/Program Files/Git/bin/git.exe (found version "2.56.0.windows.4")
+     Called from: [5]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/CMakeLists.txt
+                  [4]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/cmake/git-vars.cmake
+                  [3]	C:/Program Files/CMake/share/cmake-4.4/Modules/FindGit.cmake
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/FindPackageHandleStandardArgs.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/FindPackageMessage.cmake
+  -- The ASM compiler identification is MSVC
+     Called from: [2]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/CMakeLists.txt
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeDetermineASMCompiler.cmake
+  -- Found assembler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe
+     Called from: [2]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/CMakeLists.txt
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeDetermineASMCompiler.cmake
+  -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+     Called from: [5]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/CMakeLists.txt
+                  [4]	C:/Program Files/CMake/share/cmake-4.4/Modules/FindThreads.cmake
+                  [3]	C:/Program Files/CMake/share/cmake-4.4/Modules/FindThreads.cmake
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/CheckCSourceCompiles.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/Internal/CheckSourceCompiles.cmake
+  -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Failed
+     Called from: [5]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/CMakeLists.txt
+                  [4]	C:/Program Files/CMake/share/cmake-4.4/Modules/FindThreads.cmake
+                  [3]	C:/Program Files/CMake/share/cmake-4.4/Modules/FindThreads.cmake
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/CheckCSourceCompiles.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/Internal/CheckSourceCompiles.cmake
+  -- Looking for pthread_create in pthreads
+     Called from: [4]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/CMakeLists.txt
+                  [3]	C:/Program Files/CMake/share/cmake-4.4/Modules/FindThreads.cmake
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/FindThreads.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/CheckLibraryExists.cmake
+  -- Looking for pthread_create in pthreads - not found
+     Called from: [4]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/CMakeLists.txt
+                  [3]	C:/Program Files/CMake/share/cmake-4.4/Modules/FindThreads.cmake
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/FindThreads.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/CheckLibraryExists.cmake
+  -- Looking for pthread_create in pthread
+     Called from: [4]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/CMakeLists.txt
+                  [3]	C:/Program Files/CMake/share/cmake-4.4/Modules/FindThreads.cmake
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/FindThreads.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/CheckLibraryExists.cmake
+  -- Looking for pthread_create in pthread - not found
+     Called from: [4]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/CMakeLists.txt
+                  [3]	C:/Program Files/CMake/share/cmake-4.4/Modules/FindThreads.cmake
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/FindThreads.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/CheckLibraryExists.cmake
+  -- Found Threads: TRUE
+     Called from: [4]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/CMakeLists.txt
+                  [3]	C:/Program Files/CMake/share/cmake-4.4/Modules/FindThreads.cmake
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/FindPackageHandleStandardArgs.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/FindPackageMessage.cmake
+  -- ccache found, compilation results will be cached. Disable with GGML_CCACHE=OFF.
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+  -- CMAKE_SYSTEM_PROCESSOR: AMD64
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+  -- CMAKE_GENERATOR_PLATFORM: x64
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+  -- GGML_SYSTEM_ARCH: x86
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+  -- Including CPU backend
+     Called from: [2]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+                  [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+  -- x86 detected
+     Called from: [2]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+                  [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/CMakeLists.txt
+  -- Performing Test HAS_AVX_1
+     Called from: [6]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+                  [5]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/CMakeLists.txt
+                  [4]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/cmake/FindSIMD.cmake
+                  [3]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/cmake/FindSIMD.cmake
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/CheckCSourceRuns.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/Internal/CheckSourceRuns.cmake
+  -- Performing Test HAS_AVX_1 - Success
+     Called from: [6]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+                  [5]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/CMakeLists.txt
+                  [4]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/cmake/FindSIMD.cmake
+                  [3]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/cmake/FindSIMD.cmake
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/CheckCSourceRuns.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/Internal/CheckSourceRuns.cmake
+  -- Performing Test HAS_AVX2_1
+     Called from: [6]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+                  [5]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/CMakeLists.txt
+                  [4]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/cmake/FindSIMD.cmake
+                  [3]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/cmake/FindSIMD.cmake
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/CheckCSourceRuns.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/Internal/CheckSourceRuns.cmake
+  -- Performing Test HAS_AVX2_1 - Success
+     Called from: [6]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+                  [5]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/CMakeLists.txt
+                  [4]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/cmake/FindSIMD.cmake
+                  [3]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/cmake/FindSIMD.cmake
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/CheckCSourceRuns.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/Internal/CheckSourceRuns.cmake
+  -- Performing Test HAS_FMA_1
+     Called from: [6]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+                  [5]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/CMakeLists.txt
+                  [4]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/cmake/FindSIMD.cmake
+                  [3]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/cmake/FindSIMD.cmake
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/CheckCSourceRuns.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/Internal/CheckSourceRuns.cmake
+  -- Performing Test HAS_FMA_1 - Success
+     Called from: [6]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+                  [5]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/CMakeLists.txt
+                  [4]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/cmake/FindSIMD.cmake
+                  [3]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/cmake/FindSIMD.cmake
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/CheckCSourceRuns.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/Internal/CheckSourceRuns.cmake
+  -- Performing Test HAS_AVX512_1
+     Called from: [6]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+                  [5]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/CMakeLists.txt
+                  [4]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/cmake/FindSIMD.cmake
+                  [3]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/cmake/FindSIMD.cmake
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/CheckCSourceRuns.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/Internal/CheckSourceRuns.cmake
+  -- Performing Test HAS_AVX512_1 - Success
+     Called from: [6]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+                  [5]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/CMakeLists.txt
+                  [4]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/cmake/FindSIMD.cmake
+                  [3]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/cmake/FindSIMD.cmake
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/CheckCSourceRuns.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/Internal/CheckSourceRuns.cmake
+  -- Adding CPU backend variant ggml-cpu: /arch:AVX512 GGML_AVX512
+     Called from: [2]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+                  [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/CMakeLists.txt
+  -- Found Vulkan: C:/VulkanSDK/1.4.363.1/Lib/vulkan-1.lib (found version "1.4.363") found components: glslc glslangValidator
+     Called from: [4]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-vulkan/CMakeLists.txt
+                  [3]	C:/Program Files/CMake/share/cmake-4.4/Modules/FindVulkan.cmake
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/FindPackageHandleStandardArgs.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/FindPackageMessage.cmake
+  -- Vulkan found
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-vulkan/CMakeLists.txt
+  -- GL_KHR_cooperative_matrix supported by glslc
+     Called from: [2]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-vulkan/CMakeLists.txt
+                  [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-vulkan/CMakeLists.txt
+  -- GL_NV_cooperative_matrix2 supported by glslc
+     Called from: [2]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-vulkan/CMakeLists.txt
+                  [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-vulkan/CMakeLists.txt
+  -- GL_EXT_integer_dot_product supported by glslc
+     Called from: [2]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-vulkan/CMakeLists.txt
+                  [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-vulkan/CMakeLists.txt
+  -- GL_EXT_bfloat16 supported by glslc
+     Called from: [2]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-vulkan/CMakeLists.txt
+                  [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-vulkan/CMakeLists.txt
+  -- Including Vulkan backend
+     Called from: [2]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+                  [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+  -- ggml version: 0.9.5
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/CMakeLists.txt
+  -- ggml commit:  346c8e4
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/CMakeLists.txt
+  -- Configuring done (25.9s)
+  -- Generating D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/build
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/CMakeLists.txt
+  -- Generating D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/build/ggml
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/CMakeLists.txt
+  -- Generating D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/build/ggml/src
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+  -- Generating D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/build/ggml/src/ggml-cpu
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu/CMakeLists.txt
+  -- Generating D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/build/ggml/src/ggml-vulkan
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-vulkan/CMakeLists.txt
+  -- Generating D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/build/src
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/src/CMakeLists.txt
+  -- Generating done (0.1s)
+  -- Build files have been written to: D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/build
+  Change Dir: 'D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/build'
+
+  Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/18/Enterprise/MSBuild/Current/Bin/amd64/MSBuild.exe" INSTALL.vcxproj /p:Configuration=Release /p:Platform=x64 /p:VisualStudioVersion=18.0 /m:4 /v:n
+  MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+  Build started 11/13/2026 9:25:20 PM.
+
+       1>Project "D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\INSTALL.vcxproj" on node 1 (default targets).
+       1>Project "D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\INSTALL.vcxproj" (1) is building "D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ZERO_CHECK.vcxproj" (2) on node 1 (default targets).
+       2>PrepareForBuild:
+           Creating directory "x64\Release\ZERO_CHECK\".
+           Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+           Creating directory "x64\Release\ZERO_CHECK\ZERO_CHECK.tlog\".
+         InitializeBuildStatus:
+           Creating "x64\Release\ZERO_CHECK\ZERO_CHECK.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+           Touching "x64\Release\ZERO_CHECK\ZERO_CHECK.tlog\unsuccessfulbuild".
+         PreBuildEvent:
+           Checking File Globs
+           setlocal
+           "C:\Program Files\CMake\bin\cmake.exe" -P D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/build/CMakeFiles/VerifyGlobs.cmake
+           if %errorlevel% neq 0 goto :cmEnd
+           :cmEnd
+           endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+           :cmErrorLevel
+           exit /b %1
+           :cmDone
+           if %errorlevel% neq 0 goto :VCEnd
+           :VCEnd
+         CustomBuild:
+           1>Checking Build System
+         FinalizeBuildStatus:
+           Deleting file "x64\Release\ZERO_CHECK\ZERO_CHECK.tlog\unsuccessfulbuild".
+           Touching "x64\Release\ZERO_CHECK\ZERO_CHECK.tlog\ZERO_CHECK.lastbuildstate".
+       2>Done Building Project "D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ZERO_CHECK.vcxproj" (default targets).
+       1>Project "D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\INSTALL.vcxproj" (1) is building "D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ALL_BUILD.vcxproj" (3) on node 2 (default targets).
+       3>Project "D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ALL_BUILD.vcxproj" (3) is building "D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj" (4) on node 2 (default targets).
+       4>PrepareForBuild:
+           Creating directory "x64\Release\vulkan-shaders-gen\".
+           Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+           Creating directory "x64\Release\vulkan-shaders-gen\vulkan-s.FC6660F6.tlog\".
+         InitializeBuildStatus:
+           Creating "x64\Release\vulkan-shaders-gen\vulkan-s.FC6660F6.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+           Touching "x64\Release\vulkan-shaders-gen\vulkan-s.FC6660F6.tlog\unsuccessfulbuild".
+         ComputeCustomBuildOutput:
+           Creating directory "D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\CMakeFiles\Release\".
+         CustomBuild:
+           "The build of 'D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-download.rule' depends on 'D:\A\LOCALTRANS\LOCALTRANS\SRC-TAURI\TARGET\RELEASE\BUILD\WHISPER-RS-SYS\72E28BFD75B4E3AA\OUT\BUILD\GGML\SRC\GGML-VULKAN\VULKAN-SHADERS-GEN-PREFIX\SRC\VULKAN-SHADERS-GEN-STAMP\RELEASE\VULKAN-SHADERS-GEN-MKDIR' which is produced by the build of 'D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-mkdir.rule'. The items cannot be built in parallel."
+           "The build of 'D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-update.rule' depends on 'D:\A\LOCALTRANS\LOCALTRANS\SRC-TAURI\TARGET\RELEASE\BUILD\WHISPER-RS-SYS\72E28BFD75B4E3AA\OUT\BUILD\GGML\SRC\GGML-VULKAN\VULKAN-SHADERS-GEN-PREFIX\SRC\VULKAN-SHADERS-GEN-STAMP\RELEASE\VULKAN-SHADERS-GEN-DOWNLOAD' which is produced by the build of 'D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-download.rule'. The items cannot be built in parallel."
+           "The build of 'D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-patch.rule' depends on 'D:\A\LOCALTRANS\LOCALTRANS\SRC-TAURI\TARGET\RELEASE\BUILD\WHISPER-RS-SYS\72E28BFD75B4E3AA\OUT\BUILD\GGML\SRC\GGML-VULKAN\VULKAN-SHADERS-GEN-PREFIX\SRC\VULKAN-SHADERS-GEN-STAMP\RELEASE\VULKAN-SHADERS-GEN-UPDATE' which is produced by the build of 'D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-update.rule'. The items cannot be built in parallel."
+           "The build of 'D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-configure.rule' depends on 'D:\A\LOCALTRANS\LOCALTRANS\SRC-TAURI\TARGET\RELEASE\BUILD\WHISPER-RS-SYS\72E28BFD75B4E3AA\OUT\BUILD\GGML\SRC\GGML-VULKAN\VULKAN-SHADERS-GEN-PREFIX\SRC\VULKAN-SHADERS-GEN-STAMP\RELEASE\VULKAN-SHADERS-GEN-PATCH' which is produced by the build of 'D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-patch.rule'. The items cannot be built in parallel."
+           "The build of 'D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-build.rule' depends on 'D:\A\LOCALTRANS\LOCALTRANS\SRC-TAURI\TARGET\RELEASE\BUILD\WHISPER-RS-SYS\72E28BFD75B4E3AA\OUT\BUILD\GGML\SRC\GGML-VULKAN\VULKAN-SHADERS-GEN-PREFIX\SRC\VULKAN-SHADERS-GEN-STAMP\RELEASE\VULKAN-SHADERS-GEN-CONFIGURE' which is produced by the build of 'D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-configure.rule'. The items cannot be built in parallel."
+           "The build of 'D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-install.rule' depends on 'D:\A\LOCALTRANS\LOCALTRANS\SRC-TAURI\TARGET\RELEASE\BUILD\WHISPER-RS-SYS\72E28BFD75B4E3AA\OUT\BUILD\GGML\SRC\GGML-VULKAN\VULKAN-SHADERS-GEN-PREFIX\SRC\VULKAN-SHADERS-GEN-STAMP\RELEASE\VULKAN-SHADERS-GEN-BUILD' which is produced by the build of 'D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-build.rule'. The items cannot be built in parallel."
+           "The build of 'D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\f52988a7817143c1d4802872eb92673d\vulkan-shaders-gen-complete.rule' depends on 'D:\A\LOCALTRANS\LOCALTRANS\SRC-TAURI\TARGET\RELEASE\BUILD\WHISPER-RS-SYS\72E28BFD75B4E3AA\OUT\BUILD\GGML\SRC\GGML-VULKAN\VULKAN-SHADERS-GEN-PREFIX\SRC\VULKAN-SHADERS-GEN-STAMP\RELEASE\VULKAN-SHADERS-GEN-INSTALL' which is produced by the build of 'D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-install.rule'. The items cannot be built in parallel."
+           "The build of 'D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\1802b1d6ae871445b568ee90e687a6c8\vulkan-shaders-gen.rule' depends on 'D:\A\LOCALTRANS\LOCALTRANS\SRC-TAURI\TARGET\RELEASE\BUILD\WHISPER-RS-SYS\72E28BFD75B4E3AA\OUT\BUILD\GGML\SRC\GGML-VULKAN\CMAKEFILES\RELEASE\VULKAN-SHADERS-GEN-COMPLETE' which is produced by the build of 'D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\f52988a7817143c1d4802872eb92673d\vulkan-shaders-gen-complete.rule'. The items cannot be built in parallel."
+           1>Creating directories for 'vulkan-shaders-gen'
+           No download step for 'vulkan-shaders-gen'
+           Building Custom Rule D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-vulkan/CMakeLists.txt
+           No update step for 'vulkan-shaders-gen'
+           No patch step for 'vulkan-shaders-gen'
+           Performing configure step for 'vulkan-shaders-gen'
+           -- The C compiler identification is MSVC 19.51.36260.0
+           -- The CXX compiler identification is MSVC 19.51.36260.0
+           -- Detecting C compiler ABI info
+           -- Detecting C compiler ABI info - failed
+           -- Check for working C compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe
+           -- Check for working C compiler: C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - broken
+           CMake Error at C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeTestCCompiler.cmake:65 (message):
+             The C compiler
+           
+               "C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe"
+           
+             is not able to compile a simple test program.
+           
+             It fails with the following output:
+           
+               Change Dir: 'D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/build/ggml/src/ggml-vulkan/vulkan-shaders-gen-prefix/src/vulkan-shaders-gen-build/CMakeFiles/CMakeScratch/TryCompile-6j4mi3'
+               
+               Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/18/Enterprise/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_c37ef.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=18.0 /v:n
+               MSBuild version 18.11.1-1.26513.3+940033be3 for .NET Framework
+               Build started 11/13/2026 9:25:23 PM.
+               
+               Project "D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj" on node 1 (default targets).
+               PrepareForBuild:
+                 Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+                 Creating directory "D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\Debug\".
+                 Creating directory "cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\".
+               InitializeBuildStatus:
+                 Creating "cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+                 Touching "cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\unsuccessfulbuild".
+               ClCompile:
+                 C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\bin\HostX64\x64\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D _MBCS /D "CMAKE_INTDIR=\"Debug\"" /RTC1 /MDd /Fo"cmTC_c37ef.dir\Debug\\" /Fd"cmTC_c37ef.dir\Debug\vc145.pdb" /external:W1 /TC /errorReport:queue "D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\testCCompiler.c"
+                 Microsoft (R) C/C++ Optimizing Compiler Version 19.51.36260 for x64
+                 Copyright (C) Microsoft Corporation.  All rights reserved.
+                 cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D _MBCS /D "CMAKE_INTDIR=\"Debug\"" /RTC1 /MDd /Fo"cmTC_c37ef.dir\Debug\\" /Fd"cmTC_c37ef.dir\Debug\vc145.pdb" /external:W1 /TC /errorReport:queue "D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\testCCompiler.c"
+                 testCCompiler.c
+               Link:
+                 C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\bin\HostX64\x64\link.exe /OUT:"D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\Debug\cmTC_c37ef.exe" /INCREMENTAL /ILK:"cmTC_c37ef.dir\Debug\cmTC_c37ef.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/build/ggml/src/ggml-vulkan/vulkan-shaders-gen-prefix/src/vulkan-shaders-gen-build/CMakeFiles/CMakeScratch/TryCompile-6j4mi3/Debug/cmTC_c37ef.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /IMPLIB:"D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/build/ggml/src/ggml-vulkan/vulkan-shaders-gen-prefix/src/vulkan-shaders-gen-build/CMakeFiles/CMakeScratch/TryCompile-6j4mi3/Debug/cmTC_c37ef.lib" /MACHINE:X64  /machine:x64 cmTC_c37ef.dir\Debug\testCCompiler.obj
+       4>FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link-rc.read.1.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+                 
+                 
+                 
+       4>FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link-rc.write.1.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+                 
+                 
+                 
+       4>FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link-cvtres.read.1.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+                 
+                 
+                 
+       4>FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link-cvtres.write.1.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+                 
+                 
+                 
+       4>FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link.read.2.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+                 
+                 
+                 
+       4>FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link.read.1.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+                 
+                 
+                 
+       4>FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link.write.1.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+                 
+                 
+                 
+               Done Building Project "D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj" (default targets) -- FAILED.
+               
+               Build FAILED.
+               
+               "D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj" (default target) (1) ->
+               (Link target) -> 
+       4>FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link-rc.read.1.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+       4>FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link-rc.write.1.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+       4>FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link-cvtres.read.1.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+       4>FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link-cvtres.write.1.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+       4>FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link.read.2.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+       4>FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link.read.1.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+       4>FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link.write.1.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+               
+                   0 Warning(s)
+                   7 Error(s)
+               
+               Time Elapsed 00:00:00.32
+               
+               
+           
+           
+           
+             CMake will not be able to correctly generate this project.
+           Call Stack (most recent call first):
+             CMakeLists.txt:2 (project)
+           
+           
+           -- Configuring incomplete, errors occurred!
+       4>C:\Program Files\Microsoft Visual Studio\18\Enterprise\MSBuild\Microsoft\VC\v180\Microsoft.CppCommon.targets(254,5): error MSB8066: Custom build for 'D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-download.rule;D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-update.rule;D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-patch.rule;D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-configure.rule;D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-build.rule;D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-install.rule;D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\f52988a7817143c1d4802872eb92673d\vulkan-shaders-gen-complete.rule;D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\1802b1d6ae871445b568ee90e687a6c8\vulkan-shaders-gen.rule;D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\whisper.cpp\ggml\src\ggml-vulkan\CMakeLists.txt' exited with code 1. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+       4>Done Building Project "D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj" (default targets) -- FAILED.
+       3>Done Building Project "D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ALL_BUILD.vcxproj" (default targets) -- FAILED.
+       1>Done Building Project "D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\INSTALL.vcxproj" (default targets) -- FAILED.
+
+  Build FAILED.
+
+         "D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\INSTALL.vcxproj" (default target) (1) ->
+         "D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ALL_BUILD.vcxproj" (default target) (3) ->
+         "D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj" (default target) (4) ->
+         (CustomBuild target) -> 
+           FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link-rc.read.1.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+           FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link-rc.write.1.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+           FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link-cvtres.read.1.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+           FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link-cvtres.write.1.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+           FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link.read.2.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+           FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link.read.1.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+           FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link.write.1.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+           FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link-rc.read.1.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+           FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link-rc.write.1.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+           FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link-cvtres.read.1.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+           FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link-cvtres.write.1.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+           FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link.read.2.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+           FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link.read.1.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+           FileTracker : error FTK1011: could not create the new file tracking log file: D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.dir\Debug\cmTC_c37ef.tlog\link.write.1.tlog. The system cannot find the path specified. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen-prefix\src\vulkan-shaders-gen-build\CMakeFiles\CMakeScratch\TryCompile-6j4mi3\cmTC_c37ef.vcxproj] [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+           C:\Program Files\Microsoft Visual Studio\18\Enterprise\MSBuild\Microsoft\VC\v180\Microsoft.CppCommon.targets(254,5): error MSB8066: Custom build for 'D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-download.rule;D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-update.rule;D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-patch.rule;D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-configure.rule;D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-build.rule;D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\44966e214d30c845921aeb30027b5c8b\vulkan-shaders-gen-install.rule;D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\f52988a7817143c1d4802872eb92673d\vulkan-shaders-gen-complete.rule;D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\CMakeFiles\1802b1d6ae871445b568ee90e687a6c8\vulkan-shaders-gen.rule;D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\whisper.cpp\ggml\src\ggml-vulkan\CMakeLists.txt' exited with code 1. [D:\a\LocalTrans\LocalTrans\src-tauri\target\release\build\whisper-rs-sys\72e28bfd75b4e3aa\out\build\ggml\src\ggml-vulkan\vulkan-shaders-gen.vcxproj]
+
+      0 Warning(s)
+      15 Error(s)
+
+  Time Elapsed 00:00:02.70
+
+
+  --- stderr
+  running: "cmake" "-Wdev" "--debug-output" "D:\\a\\LocalTrans\\LocalTrans\\src-tauri\\target\\release\\build\\whisper-rs-sys/72e28bfd75b4e3aa\\out\\whisper.cpp" "-B" "D:\\a\\LocalTrans\\LocalTrans\\src-tauri\\target\\release\\build\\whisper-rs-sys/72e28bfd75b4e3aa\\out\\build" "-G" "Visual Studio 18 2026" "-Thost=x64" "-Ax64" "-DBUILD_SHARED_LIBS=OFF" "-DWHISPER_ALL_WARNINGS=OFF" "-DWHISPER_ALL_WARNINGS_3RD_PARTY=OFF" "-DWHISPER_BUILD_TESTS=OFF" "-DWHISPER_BUILD_EXAMPLES=OFF" "-DGGML_VULKAN=ON" "-DGGML_METAL=OFF" "-DCMAKE_BUILD_TYPE=Release" "-DGGML_OPENMP=OFF" "-DCMAKE_INSTALL_PREFIX=D:\\a\\LocalTrans\\LocalTrans\\src-tauri\\target\\release\\build\\whisper-rs-sys/72e28bfd75b4e3aa\\out" "-DCMAKE_C_FLAGS= -nologo -MD -Brepro -W0" "-DCMAKE_C_FLAGS_RELEASE= -nologo -MD -Brepro -W0" "-DCMAKE_CXX_FLAGS= /utf-8 -nologo -MD -Brepro -W0" "-DCMAKE_CXX_FLAGS_RELEASE= /utf-8 -nologo -MD -Brepro -W0" "-DCMAKE_ASM_FLAGS= -nologo -MD -Brepro -W0" "-DCMAKE_ASM_FLAGS_RELEASE= -nologo -MD -Brepro -W0" "-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON"
+  The dev option is deprecated.  Use -Wauthor instead.
+  CMake Warning (deprecated) at CMakeLists.txt:1 (cmake_minimum_required):
+    Compatibility with CMake < 3.10 will be removed from a future version of
+    CMake.
+
+    Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+    to tell CMake that the project requires at least <min> but has been updated
+    to work with policies introduced by <max> or earlier.
+  This warning is for project developers.  Use -Wno-author or -Wno-deprecated
+  to suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/CMakeLists.txt
+  CMake Warning (policy) at C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCompilerABI.cmake:123 (try_compile):
+    Policy CMP0066 is not set: Honor per-config flags in try_compile()
+    source-file signature.  Run "cmake --help-policy CMP0066" for policy
+    details.  Use the cmake_policy command to set the policy and suppress this
+    warning.
+
+    For compatibility with older versions of CMake, try_compile is not honoring
+    caller config-specific compiler flags (e.g.  CMAKE_C_FLAGS_DEBUG) in the
+    test project.
+  Call Stack (most recent call first):
+    C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)
+    CMakeLists.txt:2 (project)
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [3]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/CMakeLists.txt
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeTestCCompiler.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCompilerABI.cmake
+  CMake Warning (policy) at C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCompilerABI.cmake:123 (try_compile):
+    Policy CMP0066 is not set: Honor per-config flags in try_compile()
+    source-file signature.  Run "cmake --help-policy CMP0066" for policy
+    details.  Use the cmake_policy command to set the policy and suppress this
+    warning.
+
+    For compatibility with older versions of CMake, try_compile is not honoring
+    caller config-specific compiler flags (e.g.  CMAKE_C_FLAGS_DEBUG) in the
+    test project.
+  Call Stack (most recent call first):
+    C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)
+    CMakeLists.txt:2 (project)
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [3]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/CMakeLists.txt
+                  [2]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeTestCXXCompiler.cmake
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCompilerABI.cmake
+     Entering             D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/CMakeLists.txt
+  CMake Warning (policy) at C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeDetermineASMCompiler.cmake:237 (cmake_policy):
+    Policy CMP0194 is not set: MSVC is not an assembler for language ASM.  Run
+    "cmake --help-policy CMP0194" for policy details.  Use the cmake_policy
+    command to set the policy and suppress this warning.
+  Call Stack (most recent call first):
+    ggml/CMakeLists.txt:2 (project)
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [2]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/CMakeLists.txt
+                  [1]	C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeDetermineASMCompiler.cmake
+     Entering             D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/CMakeLists.txt
+     Entering             D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-cpu
+     Called from: [2]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+                  [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+     Returning to         D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src
+     Called from: [2]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+                  [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+     Entering             D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-vulkan
+     Called from: [2]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+                  [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+     Returning to         D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src
+     Called from: [2]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+                  [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+     Returning to         D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/CMakeLists.txt
+     Returning to         D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/CMakeLists.txt
+     Entering             D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/src
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/CMakeLists.txt
+     Returning to         D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/CMakeLists.txt
+  CMake Warning (policy) in ggml/CMakeLists.txt:
+    Policy CMP0200 is not set: Location and configuration selection for
+    imported targets is more consistent.  Run "cmake --help-policy CMP0200" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+
+    Configuration selection for imported target "Threads::Threads" selected
+    configuration "(none)", but would select configuration "DEBUG" under the
+    NEW policy.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+  CMake Warning (policy) in ggml/src/ggml-vulkan/CMakeLists.txt:
+    Policy CMP0200 is not set: Location and configuration selection for
+    imported targets is more consistent.  Run "cmake --help-policy CMP0200" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+
+    Configuration selection for imported target "Vulkan::Vulkan" selected
+    configuration "(none)", but would select configuration "DEBUG" under the
+    NEW policy.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+  CMake Warning (policy) in src/CMakeLists.txt:
+    Policy CMP0200 is not set: Location and configuration selection for
+    imported targets is more consistent.  Run "cmake --help-policy CMP0200" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+
+    Configuration selection for imported target "Threads::Threads" selected
+    configuration "(none)", but would select configuration "DEBUG" under the
+    NEW policy.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+  CMake Warning (policy) in ggml/CMakeLists.txt:
+    Policy CMP0200 is not set: Location and configuration selection for
+    imported targets is more consistent.  Run "cmake --help-policy CMP0200" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+
+    Configuration selection for imported target "Threads::Threads" selected
+    configuration "(none)", but would select configuration "RELEASE" under the
+    NEW policy.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+  CMake Warning (policy) in ggml/CMakeLists.txt:
+    Policy CMP0200 is not set: Location and configuration selection for
+    imported targets is more consistent.  Run "cmake --help-policy CMP0200" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+
+    Configuration selection for imported target "Threads::Threads" selected
+    configuration "(none)", but would select configuration "MINSIZEREL" under
+    the NEW policy.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+  CMake Warning (policy) in ggml/CMakeLists.txt:
+    Policy CMP0200 is not set: Location and configuration selection for
+    imported targets is more consistent.  Run "cmake --help-policy CMP0200" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+
+    Configuration selection for imported target "Threads::Threads" selected
+    configuration "(none)", but would select configuration "RELWITHDEBINFO"
+    under the NEW policy.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+  CMake Warning (policy) in ggml/src/ggml-vulkan/CMakeLists.txt:
+    Policy CMP0200 is not set: Location and configuration selection for
+    imported targets is more consistent.  Run "cmake --help-policy CMP0200" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+
+    Configuration selection for imported target "Vulkan::Vulkan" selected
+    configuration "(none)", but would select configuration "RELEASE" under the
+    NEW policy.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+  CMake Warning (policy) in ggml/src/ggml-vulkan/CMakeLists.txt:
+    Policy CMP0200 is not set: Location and configuration selection for
+    imported targets is more consistent.  Run "cmake --help-policy CMP0200" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+
+    Configuration selection for imported target "Vulkan::Vulkan" selected
+    configuration "(none)", but would select configuration "MINSIZEREL" under
+    the NEW policy.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+  CMake Warning (policy) in ggml/src/ggml-vulkan/CMakeLists.txt:
+    Policy CMP0200 is not set: Location and configuration selection for
+    imported targets is more consistent.  Run "cmake --help-policy CMP0200" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+
+    Configuration selection for imported target "Vulkan::Vulkan" selected
+    configuration "(none)", but would select configuration "RELWITHDEBINFO"
+    under the NEW policy.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+  CMake Warning (policy) in src/CMakeLists.txt:
+    Policy CMP0200 is not set: Location and configuration selection for
+    imported targets is more consistent.  Run "cmake --help-policy CMP0200" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+
+    Configuration selection for imported target "Threads::Threads" selected
+    configuration "(none)", but would select configuration "RELEASE" under the
+    NEW policy.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+  CMake Warning (policy) in src/CMakeLists.txt:
+    Policy CMP0200 is not set: Location and configuration selection for
+    imported targets is more consistent.  Run "cmake --help-policy CMP0200" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+
+    Configuration selection for imported target "Threads::Threads" selected
+    configuration "(none)", but would select configuration "MINSIZEREL" under
+    the NEW policy.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+  CMake Warning (policy) in src/CMakeLists.txt:
+    Policy CMP0200 is not set: Location and configuration selection for
+    imported targets is more consistent.  Run "cmake --help-policy CMP0200" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+
+    Configuration selection for imported target "Threads::Threads" selected
+    configuration "(none)", but would select configuration "RELWITHDEBINFO"
+    under the NEW policy.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+  CMake Warning (policy) in CMakeLists.txt:
+    Policy CMP0082 is not set: Install rules from add_subdirectory() are
+    interleaved with those in caller.  Run "cmake --help-policy CMP0082" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/CMakeLists.txt
+  CMake Warning (policy) at ggml/src/CMakeLists.txt:192 (add_library):
+    Policy CMP0156 is not set: De-duplicate libraries on link lines based on
+    linker capabilities.  Run "cmake --help-policy CMP0156" for policy details.
+    Use the cmake_policy command to set the policy and suppress this warning.
+
+    Since the policy is not set, legacy libraries de-duplication strategy will
+    be applied.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+  CMake Warning (policy) at ggml/src/CMakeLists.txt:192 (add_library):
+    Policy CMP0156 is not set: De-duplicate libraries on link lines based on
+    linker capabilities.  Run "cmake --help-policy CMP0156" for policy details.
+    Use the cmake_policy command to set the policy and suppress this warning.
+
+    Since the policy is not set, legacy libraries de-duplication strategy will
+    be applied.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+  CMake Warning (policy) at ggml/src/CMakeLists.txt:192 (add_library):
+    Policy CMP0156 is not set: De-duplicate libraries on link lines based on
+    linker capabilities.  Run "cmake --help-policy CMP0156" for policy details.
+    Use the cmake_policy command to set the policy and suppress this warning.
+
+    Since the policy is not set, legacy libraries de-duplication strategy will
+    be applied.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+  CMake Warning (policy) at ggml/src/CMakeLists.txt:192 (add_library):
+    Policy CMP0156 is not set: De-duplicate libraries on link lines based on
+    linker capabilities.  Run "cmake --help-policy CMP0156" for policy details.
+    Use the cmake_policy command to set the policy and suppress this warning.
+
+    Since the policy is not set, legacy libraries de-duplication strategy will
+    be applied.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+  CMake Warning (policy) at ggml/src/CMakeLists.txt:259 (add_library):
+    Policy CMP0156 is not set: De-duplicate libraries on link lines based on
+    linker capabilities.  Run "cmake --help-policy CMP0156" for policy details.
+    Use the cmake_policy command to set the policy and suppress this warning.
+
+    Since the policy is not set, legacy libraries de-duplication strategy will
+    be applied.
+  Call Stack (most recent call first):
+    ggml/src/ggml-cpu/CMakeLists.txt:22 (ggml_add_backend_library)
+    ggml/src/CMakeLists.txt:444 (ggml_add_cpu_backend_variant_impl)
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+  CMake Warning (policy) at ggml/src/CMakeLists.txt:259 (add_library):
+    Policy CMP0156 is not set: De-duplicate libraries on link lines based on
+    linker capabilities.  Run "cmake --help-policy CMP0156" for policy details.
+    Use the cmake_policy command to set the policy and suppress this warning.
+
+    Since the policy is not set, legacy libraries de-duplication strategy will
+    be applied.
+  Call Stack (most recent call first):
+    ggml/src/ggml-cpu/CMakeLists.txt:22 (ggml_add_backend_library)
+    ggml/src/CMakeLists.txt:444 (ggml_add_cpu_backend_variant_impl)
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+  CMake Warning (policy) at ggml/src/CMakeLists.txt:259 (add_library):
+    Policy CMP0156 is not set: De-duplicate libraries on link lines based on
+    linker capabilities.  Run "cmake --help-policy CMP0156" for policy details.
+    Use the cmake_policy command to set the policy and suppress this warning.
+
+    Since the policy is not set, legacy libraries de-duplication strategy will
+    be applied.
+  Call Stack (most recent call first):
+    ggml/src/ggml-cpu/CMakeLists.txt:22 (ggml_add_backend_library)
+    ggml/src/CMakeLists.txt:444 (ggml_add_cpu_backend_variant_impl)
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+  CMake Warning (policy) at ggml/src/CMakeLists.txt:259 (add_library):
+    Policy CMP0156 is not set: De-duplicate libraries on link lines based on
+    linker capabilities.  Run "cmake --help-policy CMP0156" for policy details.
+    Use the cmake_policy command to set the policy and suppress this warning.
+
+    Since the policy is not set, legacy libraries de-duplication strategy will
+    be applied.
+  Call Stack (most recent call first):
+    ggml/src/ggml-cpu/CMakeLists.txt:22 (ggml_add_backend_library)
+    ggml/src/CMakeLists.txt:444 (ggml_add_cpu_backend_variant_impl)
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+  CMake Warning (policy) at ggml/src/CMakeLists.txt:224 (add_library):
+    Policy CMP0156 is not set: De-duplicate libraries on link lines based on
+    linker capabilities.  Run "cmake --help-policy CMP0156" for policy details.
+    Use the cmake_policy command to set the policy and suppress this warning.
+
+    Since the policy is not set, legacy libraries de-duplication strategy will
+    be applied.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+  CMake Warning (policy) in ggml/src/ggml-vulkan/CMakeLists.txt:
+    Policy CMP0200 is not set: Location and configuration selection for
+    imported targets is more consistent.  Run "cmake --help-policy CMP0200" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+
+    Configuration selection for imported target "Vulkan::Vulkan" selected
+    configuration "(none)", but would select configuration "DEBUG" under the
+    NEW policy.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+  CMake Warning (policy) at ggml/src/CMakeLists.txt:224 (add_library):
+    Policy CMP0156 is not set: De-duplicate libraries on link lines based on
+    linker capabilities.  Run "cmake --help-policy CMP0156" for policy details.
+    Use the cmake_policy command to set the policy and suppress this warning.
+
+    Since the policy is not set, legacy libraries de-duplication strategy will
+    be applied.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+  CMake Warning (policy) in ggml/src/ggml-vulkan/CMakeLists.txt:
+    Policy CMP0200 is not set: Location and configuration selection for
+    imported targets is more consistent.  Run "cmake --help-policy CMP0200" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+
+    Configuration selection for imported target "Vulkan::Vulkan" selected
+    configuration "(none)", but would select configuration "RELEASE" under the
+    NEW policy.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+  CMake Warning (policy) at ggml/src/CMakeLists.txt:224 (add_library):
+    Policy CMP0156 is not set: De-duplicate libraries on link lines based on
+    linker capabilities.  Run "cmake --help-policy CMP0156" for policy details.
+    Use the cmake_policy command to set the policy and suppress this warning.
+
+    Since the policy is not set, legacy libraries de-duplication strategy will
+    be applied.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+  CMake Warning (policy) in ggml/src/ggml-vulkan/CMakeLists.txt:
+    Policy CMP0200 is not set: Location and configuration selection for
+    imported targets is more consistent.  Run "cmake --help-policy CMP0200" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+
+    Configuration selection for imported target "Vulkan::Vulkan" selected
+    configuration "(none)", but would select configuration "MINSIZEREL" under
+    the NEW policy.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+  CMake Warning (policy) at ggml/src/CMakeLists.txt:224 (add_library):
+    Policy CMP0156 is not set: De-duplicate libraries on link lines based on
+    linker capabilities.  Run "cmake --help-policy CMP0156" for policy details.
+    Use the cmake_policy command to set the policy and suppress this warning.
+
+    Since the policy is not set, legacy libraries de-duplication strategy will
+    be applied.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+  CMake Warning (policy) in ggml/src/ggml-vulkan/CMakeLists.txt:
+    Policy CMP0200 is not set: Location and configuration selection for
+    imported targets is more consistent.  Run "cmake --help-policy CMP0200" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+
+    Configuration selection for imported target "Vulkan::Vulkan" selected
+    configuration "(none)", but would select configuration "RELWITHDEBINFO"
+    under the NEW policy.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/CMakeLists.txt
+  CMake Warning (policy) at ggml/src/CMakeLists.txt:259 (add_library):
+    Policy CMP0156 is not set: De-duplicate libraries on link lines based on
+    linker capabilities.  Run "cmake --help-policy CMP0156" for policy details.
+    Use the cmake_policy command to set the policy and suppress this warning.
+
+    Since the policy is not set, legacy libraries de-duplication strategy will
+    be applied.
+  Call Stack (most recent call first):
+    ggml/src/ggml-vulkan/CMakeLists.txt:57 (ggml_add_backend_library)
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-vulkan/CMakeLists.txt
+  CMake Warning (policy) in ggml/src/ggml-vulkan/CMakeLists.txt:
+    Policy CMP0200 is not set: Location and configuration selection for
+    imported targets is more consistent.  Run "cmake --help-policy CMP0200" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+
+    Configuration selection for imported target "Vulkan::Vulkan" selected
+    configuration "(none)", but would select configuration "DEBUG" under the
+    NEW policy.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-vulkan/CMakeLists.txt
+  CMake Warning (policy) at ggml/src/CMakeLists.txt:259 (add_library):
+    Policy CMP0156 is not set: De-duplicate libraries on link lines based on
+    linker capabilities.  Run "cmake --help-policy CMP0156" for policy details.
+    Use the cmake_policy command to set the policy and suppress this warning.
+
+    Since the policy is not set, legacy libraries de-duplication strategy will
+    be applied.
+  Call Stack (most recent call first):
+    ggml/src/ggml-vulkan/CMakeLists.txt:57 (ggml_add_backend_library)
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-vulkan/CMakeLists.txt
+  CMake Warning (policy) in ggml/src/ggml-vulkan/CMakeLists.txt:
+    Policy CMP0200 is not set: Location and configuration selection for
+    imported targets is more consistent.  Run "cmake --help-policy CMP0200" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+
+    Configuration selection for imported target "Vulkan::Vulkan" selected
+    configuration "(none)", but would select configuration "RELEASE" under the
+    NEW policy.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-vulkan/CMakeLists.txt
+  CMake Warning (policy) at ggml/src/CMakeLists.txt:259 (add_library):
+    Policy CMP0156 is not set: De-duplicate libraries on link lines based on
+    linker capabilities.  Run "cmake --help-policy CMP0156" for policy details.
+    Use the cmake_policy command to set the policy and suppress this warning.
+
+    Since the policy is not set, legacy libraries de-duplication strategy will
+    be applied.
+  Call Stack (most recent call first):
+    ggml/src/ggml-vulkan/CMakeLists.txt:57 (ggml_add_backend_library)
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-vulkan/CMakeLists.txt
+  CMake Warning (policy) in ggml/src/ggml-vulkan/CMakeLists.txt:
+    Policy CMP0200 is not set: Location and configuration selection for
+    imported targets is more consistent.  Run "cmake --help-policy CMP0200" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+
+    Configuration selection for imported target "Vulkan::Vulkan" selected
+    configuration "(none)", but would select configuration "MINSIZEREL" under
+    the NEW policy.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-vulkan/CMakeLists.txt
+  CMake Warning (policy) at ggml/src/CMakeLists.txt:259 (add_library):
+    Policy CMP0156 is not set: De-duplicate libraries on link lines based on
+    linker capabilities.  Run "cmake --help-policy CMP0156" for policy details.
+    Use the cmake_policy command to set the policy and suppress this warning.
+
+    Since the policy is not set, legacy libraries de-duplication strategy will
+    be applied.
+  Call Stack (most recent call first):
+    ggml/src/ggml-vulkan/CMakeLists.txt:57 (ggml_add_backend_library)
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-vulkan/CMakeLists.txt
+  CMake Warning (policy) in ggml/src/ggml-vulkan/CMakeLists.txt:
+    Policy CMP0200 is not set: Location and configuration selection for
+    imported targets is more consistent.  Run "cmake --help-policy CMP0200" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+
+    Configuration selection for imported target "Vulkan::Vulkan" selected
+    configuration "(none)", but would select configuration "RELWITHDEBINFO"
+    under the NEW policy.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/ggml/src/ggml-vulkan/CMakeLists.txt
+  CMake Warning (policy) in src/CMakeLists.txt:
+    Policy CMP0128 is not set: Selection of language standard and extension
+    flags improved.  Run "cmake --help-policy CMP0128" for policy details.  Use
+    the cmake_policy command to set the policy and suppress this warning.
+
+    For compatibility with older versions of CMake, compiler extensions won't
+    be enabled.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/src/CMakeLists.txt
+  CMake Warning (policy) in src/CMakeLists.txt:
+    Policy CMP0128 is not set: Selection of language standard and extension
+    flags improved.  Run "cmake --help-policy CMP0128" for policy details.  Use
+    the cmake_policy command to set the policy and suppress this warning.
+
+    For compatibility with older versions of CMake, compiler extensions won't
+    be enabled.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/src/CMakeLists.txt
+  CMake Warning (policy) in src/CMakeLists.txt:
+    Policy CMP0128 is not set: Selection of language standard and extension
+    flags improved.  Run "cmake --help-policy CMP0128" for policy details.  Use
+    the cmake_policy command to set the policy and suppress this warning.
+
+    For compatibility with older versions of CMake, compiler extensions won't
+    be enabled.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/src/CMakeLists.txt
+  CMake Warning (policy) in src/CMakeLists.txt:
+    Policy CMP0128 is not set: Selection of language standard and extension
+    flags improved.  Run "cmake --help-policy CMP0128" for policy details.  Use
+    the cmake_policy command to set the policy and suppress this warning.
+
+    For compatibility with older versions of CMake, compiler extensions won't
+    be enabled.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/src/CMakeLists.txt
+  CMake Warning (policy) at src/CMakeLists.txt:106 (add_library):
+    Policy CMP0156 is not set: De-duplicate libraries on link lines based on
+    linker capabilities.  Run "cmake --help-policy CMP0156" for policy details.
+    Use the cmake_policy command to set the policy and suppress this warning.
+
+    Since the policy is not set, legacy libraries de-duplication strategy will
+    be applied.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/src/CMakeLists.txt
+  CMake Warning (policy) in ggml/src/ggml-vulkan/CMakeLists.txt:
+    Policy CMP0200 is not set: Location and configuration selection for
+    imported targets is more consistent.  Run "cmake --help-policy CMP0200" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+
+    Configuration selection for imported target "Vulkan::Vulkan" selected
+    configuration "(none)", but would select configuration "DEBUG" under the
+    NEW policy.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/src/CMakeLists.txt
+  CMake Warning (policy) at src/CMakeLists.txt:106 (add_library):
+    Policy CMP0156 is not set: De-duplicate libraries on link lines based on
+    linker capabilities.  Run "cmake --help-policy CMP0156" for policy details.
+    Use the cmake_policy command to set the policy and suppress this warning.
+
+    Since the policy is not set, legacy libraries de-duplication strategy will
+    be applied.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/src/CMakeLists.txt
+  CMake Warning (policy) in ggml/src/ggml-vulkan/CMakeLists.txt:
+    Policy CMP0200 is not set: Location and configuration selection for
+    imported targets is more consistent.  Run "cmake --help-policy CMP0200" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+
+    Configuration selection for imported target "Vulkan::Vulkan" selected
+    configuration "(none)", but would select configuration "RELEASE" under the
+    NEW policy.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/src/CMakeLists.txt
+  CMake Warning (policy) at src/CMakeLists.txt:106 (add_library):
+    Policy CMP0156 is not set: De-duplicate libraries on link lines based on
+    linker capabilities.  Run "cmake --help-policy CMP0156" for policy details.
+    Use the cmake_policy command to set the policy and suppress this warning.
+
+    Since the policy is not set, legacy libraries de-duplication strategy will
+    be applied.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/src/CMakeLists.txt
+  CMake Warning (policy) in ggml/src/ggml-vulkan/CMakeLists.txt:
+    Policy CMP0200 is not set: Location and configuration selection for
+    imported targets is more consistent.  Run "cmake --help-policy CMP0200" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+
+    Configuration selection for imported target "Vulkan::Vulkan" selected
+    configuration "(none)", but would select configuration "MINSIZEREL" under
+    the NEW policy.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/src/CMakeLists.txt
+  CMake Warning (policy) at src/CMakeLists.txt:106 (add_library):
+    Policy CMP0156 is not set: De-duplicate libraries on link lines based on
+    linker capabilities.  Run "cmake --help-policy CMP0156" for policy details.
+    Use the cmake_policy command to set the policy and suppress this warning.
+
+    Since the policy is not set, legacy libraries de-duplication strategy will
+    be applied.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/src/CMakeLists.txt
+  CMake Warning (policy) in ggml/src/ggml-vulkan/CMakeLists.txt:
+    Policy CMP0200 is not set: Location and configuration selection for
+    imported targets is more consistent.  Run "cmake --help-policy CMP0200" for
+    policy details.  Use the cmake_policy command to set the policy and
+    suppress this warning.
+
+    Configuration selection for imported target "Vulkan::Vulkan" selected
+    configuration "(none)", but would select configuration "RELWITHDEBINFO"
+    under the NEW policy.
+  This warning is for project developers.  Use -Wno-author or -Wno-policy to
+  suppress it.
+
+     Called from: [1]	D:/a/LocalTrans/LocalTrans/src-tauri/target/release/build/whisper-rs-sys/72e28bfd75b4e3aa/out/whisper.cpp/src/CMakeLists.txt
+  running: "cmake" "--build" "D:\\a\\LocalTrans\\LocalTrans\\src-tauri\\target\\release\\build\\whisper-rs-sys/72e28bfd75b4e3aa\\out\\build" "--target" "install" "--config" "Release" "--parallel" "4"
+
+  thread 'main' (3372) panicked at C:\Users\runneradmin\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cmake-0.1.58\src\lib.rs:1132:5:
+
+  command did not execute successfully, got: exit code: 1
+
+  build script failed, must exit now
+  note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+failed to build app: failed to build app
+       Error failed to build app: failed to build app
+Error: Process completed with exit code 1.

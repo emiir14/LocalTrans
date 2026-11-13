@@ -21,6 +21,8 @@ permissions:
 jobs:
   build-windows:
     runs-on: windows-latest
+    env:
+      CARGO_TARGET_DIR: D:\t
 
     steps:
       - name: Checkout repository
@@ -49,7 +51,8 @@ jobs:
       - name: Rust & Cargo cache
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: src-tauri -> target
+          workspaces: src-tauri
+          cache-targets: false
           prefix-key: windows-vulkan
 
       - name: Install web dependencies
@@ -62,24 +65,29 @@ jobs:
         run: npx --yes @tauri-apps/cli@2 icon public/pwa-512x512.png
 
       - name: Build Tauri NSIS installer (.exe)
-        run: npx --yes @tauri-apps/cli@2 build --bundles nsis
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "D:\t" | Out-Null
+          npx --yes @tauri-apps/cli@2 build --bundles nsis
 
       - name: Rename installer to canonical Escriba-Setup.exe
         shell: pwsh
         run: |
-          $nsisDir = "src-tauri\target\release\bundle\nsis"
+          $nsisDir = "D:\t\release\bundle\nsis"
+          $outDir = "release-artifacts"
+          New-Item -ItemType Directory -Force -Path $outDir | Out-Null
           $exe = Get-ChildItem -Path $nsisDir -Filter "*-setup.exe" | Select-Object -First 1
           if (-not $exe) { throw "No NSIS setup .exe found in $nsisDir" }
-          Copy-Item $exe.FullName "$nsisDir\Escriba-Setup.exe" -Force
-          Get-FileHash "$nsisDir\Escriba-Setup.exe" -Algorithm SHA256 | Out-File "$nsisDir\Escriba-Setup.exe.sha256"
+          Copy-Item $exe.FullName "$outDir\Escriba-Setup.exe" -Force
+          Get-FileHash "$outDir\Escriba-Setup.exe" -Algorithm SHA256 | Out-File "$outDir\Escriba-Setup.exe.sha256"
 
       - name: Upload Windows installer artifact
         uses: actions/upload-artifact@v4
         with:
           name: escriba-windows-exe
           path: |
-            src-tauri/target/release/bundle/nsis/Escriba-Setup.exe
-            src-tauri/target/release/bundle/nsis/Escriba-Setup.exe.sha256
+            release-artifacts/Escriba-Setup.exe
+            release-artifacts/Escriba-Setup.exe.sha256
 
       - name: Publish to GitHub Release
         if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.publish_release)
@@ -91,6 +99,6 @@ jobs:
           target_commitish: ${{ github.sha }}
           name: Escriba ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || inputs.release_tag }}
           files: |
-            src-tauri/target/release/bundle/nsis/Escriba-Setup.exe
-            src-tauri/target/release/bundle/nsis/Escriba-Setup.exe.sha256
+            release-artifacts/Escriba-Setup.exe
+            release-artifacts/Escriba-Setup.exe.sha256
           generate_release_notes: true
