@@ -40,6 +40,6 @@ El instalador final queda en `src-tauri/target/release/bundle/nsis/`.
 ## Qué hace el instalador `.exe` en Windows
 
 - **Instalación por usuario (`currentUser`):** Se instala en `AppData\Local\Escriba` sin pedir permisos de administrador (UAC).
-- **Modelos GGML locales:** Los modelos (`ggml-small-q8_0.bin` y `ggml-large-v3-turbo-q5_0.bin`) se descargan una sola vez dentro de `%LOCALAPPDATA%\com.escriba.app\models\`, nunca dentro de `Program Files`.
+- **Modelos GGML locales:** Los modelos (`ggml-small-q8_0.bin` y `ggml-large-v3-turbo-q5_0.bin`) se descargan una sola vez dentro de `%LOCALAPPDATA%\com.escriba.desktop\models\`, nunca dentro de `Program Files`.
 - **Single Instance & Bandeja del sistema:** Evita abrir dos ventanas duplicadas y protege sesiones de transcripción activas minimizando a la bandeja al cerrar.
 - **SmartScreen de Windows:** Como es una app gratuita sin certificado comercial pago, la primera vez Windows puede mostrar *"Windows protegió su PC → Más información → Ejecutar de todas formas"*.

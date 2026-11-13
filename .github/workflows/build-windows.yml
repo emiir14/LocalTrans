@@ -53,7 +53,10 @@ jobs:
           prefix-key: windows-vulkan
 
       - name: Install web dependencies
-        run: npm install --no-audit --no-fund
+        shell: pwsh
+        run: |
+          Remove-Item -Force package-lock.json -ErrorAction SilentlyContinue
+          npm install --include=optional --no-audit --no-fund
 
       - name: Generate exact Windows & NSIS icons
         run: npx --yes @tauri-apps/cli@2 icon public/pwa-512x512.png

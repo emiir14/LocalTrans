@@ -341,13 +341,9 @@ pub async fn transcribe_whisper_segment(
             .full(params, &float_samples)
             .map_err(|e| format!("Error durante inferencia whisper.cpp: {e}"))?;
 
-        let n_segments = w_state
-            .full_n_segments()
-            .map_err(|e| format!("Error leyendo segmentos transcritos: {e}"))?;
-
-        let mut combined = Vec::with_capacity(n_segments as usize);
-        for i in 0..n_segments {
-            if let Ok(seg_text) = w_state.full_get_segment_text(i) {
+        let mut combined = Vec::new();
+        for segment in w_state.as_iter() {
+            if let Ok(seg_text) = segment.to_str_lossy() {
                 let trimmed = seg_text.trim();
                 if !trimmed.is_empty() {
                     combined.push(trimmed.to_string());
