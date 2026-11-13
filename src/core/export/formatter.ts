@@ -1,3 +1,4 @@
+import { formatClinicalNoteText } from '../clinical/clinicalTemplates';
 import { Session, TranscriptSegment } from '../types';
 
 export function formatTimeSrt(seconds: number): string {
@@ -35,6 +36,13 @@ export const ExportFormatter = {
       '',
     ];
 
+    if (session.clinicalNote) {
+      lines.push(formatClinicalNoteText(session, session.clinicalNote));
+      lines.push('');
+      lines.push('TRANSCRIPCIÓN COMPLETA:');
+      lines.push('');
+    }
+
     for (const seg of segments) {
       const time = `[${formatTimeDisplay(seg.start)} - ${formatTimeDisplay(seg.end)}]`;
       const speaker = seg.speaker ? `${seg.speaker}: ` : '';
@@ -61,9 +69,21 @@ export const ExportFormatter = {
       `- **Duración:** ${formatTimeDisplay(session.durationSec)}`,
       `- **Modelo usado:** ${session.modelTierUsed || 'Automático'}`,
       '',
-      `## Transcripción`,
-      '',
     ];
+
+    if (session.clinicalNote) {
+      const n = session.clinicalNote;
+      lines.push('## Ficha Clínica Estructurada', '');
+      if (n.detectedTeeth.length > 0) lines.push(`- **Piezas FDI:** ${n.detectedTeeth.join(', ')}`);
+      if (n.chiefComplaint) lines.push(`- **Motivo / Relato:** ${n.chiefComplaint}`);
+      if (n.findings) lines.push(`- **Hallazgos:** ${n.findings}`);
+      if (n.procedure) lines.push(`- **Procedimiento:** ${n.procedure}`);
+      if (n.indications) lines.push(`- **Indicaciones:** ${n.indications}`);
+      if (n.nextVisit) lines.push(`- **Próximo control:** ${n.nextVisit}`);
+      lines.push('');
+    }
+
+    lines.push(`## Transcripción`, '');
 
     for (const seg of segments) {
       const time = `\`${formatTimeDisplay(seg.start)} - ${formatTimeDisplay(seg.end)}\``;
@@ -96,6 +116,7 @@ export const ExportFormatter = {
           durationSec: session.durationSec,
           consentGiven: session.consentGiven,
           modelTierUsed: session.modelTierUsed,
+          clinicalNote: session.clinicalNote || null,
         },
         segments: segments.map((s) => ({
           id: s.id,
@@ -129,7 +150,6 @@ export const ExportFormatter = {
       '',
     ].filter(Boolean);
 
-    // Combine continuous dialogue cleanly without timestamps
     for (const seg of segments) {
       if (seg.speaker) {
         lines.push(`${seg.speaker}: ${seg.text}`);

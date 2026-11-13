@@ -23,6 +23,8 @@ export interface ITranscriptRepository {
   addSegment(segment: TranscriptSegment): Promise<void>;
   saveSegments(segments: TranscriptSegment[]): Promise<void>;
   updateSegment(id: string, text: string): Promise<void>;
+  updateSegmentSpeaker(id: string, speaker: string | undefined): Promise<void>;
+  deleteSegment(id: string): Promise<void>;
   deleteBySessionId(sessionId: string): Promise<void>;
 }
 
@@ -30,6 +32,7 @@ export interface IAudioStore {
   addChunk(chunk: AudioChunk): Promise<void>;
   getChunks(sessionId: string): Promise<AudioChunk[]>;
   getCombinedPcmFloat32(sessionId: string): Promise<Float32Array>;
+  createWavBlob(sessionId: string): Promise<{ blob: Blob; durationSec: number }>;
   deleteAudio(sessionId: string): Promise<void>;
   deleteAllTranscribedAudio(transcribedSessionIds: string[]): Promise<void>;
   clearAll(): Promise<void>;

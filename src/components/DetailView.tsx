@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   Play,
@@ -24,10 +24,30 @@ import {
   Cpu,
   Radio,
   Sun,
+  Mic,
+  Printer,
+  ClipboardList,
+  UserCheck,
+  RefreshCw,
 } from 'lucide-react';
+import {
+  buildDraftClinicalNote,
+  CLINICAL_TEMPLATES,
+  extractFdiTeeth,
+  formatClinicalNoteText,
+} from '../core/clinical/clinicalTemplates';
 import { ExportFormatter, formatTimeDisplay } from '../core/export/formatter';
-import { TranscriptSegment } from '../core/types';
+import { ClinicalNote, ClinicalTemplateId, TranscriptSegment } from '../core/types';
 import { audioStore, useAppStore } from '../store/useAppStore';
+
+const SPEAKER_CYCLE: Array<string | undefined> = [
+  undefined,
+  'Odontólogo',
+  'Paciente',
+  'Asistente',
+];
+
+const PLAYBACK_SPEEDS = [1, 1.25, 1.5, 2] as const;
 
 function formatRemainingTime(seconds: number): string {
   if (seconds <= 0) return 'Calculando...';
@@ -44,10 +64,14 @@ export const DetailView: React.FC = () => {
     setView,
     startTranscription,
     cancelTranscription,
+    appendRecordingToSession,
+    updateSessionMeta,
+    saveClinicalNote,
     transcribingSessionId,
     transcriptionProgress,
     transcriptionFallbackNotice,
     updateSegmentText,
+    updateSegmentSpeaker,
     deleteSession,
     deleteAudioForSession,
     openConfirm,
@@ -56,11 +80,14 @@ export const DetailView: React.FC = () => {
   } = useAppStore();
 
   const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState<number>(1);
   const [currentTime, setCurrentTime] = useState(0);
   const [totalAudioDuration, setTotalAudioDuration] = useState(0);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
+  const [rightTab, setRightTab] = useState<'transcript' | 'clinical_note'>('transcript');
   const [showTimestamps, setShowTimestamps] = useState(true);
+  const [highlightFdi, setHighlightFdi] = useState(true);
   const [autoScroll, setAutoScroll] = useState(true);
   const [showLiveLogs, setShowLiveLogs] = useState(false);
   const [transcriptSearch, setTranscriptSearch] = useState('');
@@ -69,9 +96,53 @@ export const DetailView: React.FC = () => {
   const [copiedType, setCopiedType] = useState<string | null>(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
 
+  // Inline Session Title / Reference editor
+  const [isEditingMeta, setIsEditingMeta] = useState(false);
+  const [metaRefInput, setMetaRefInput] = useState('');
+  const [metaTitleInput, setMetaTitleInput] = useState('');
+
+  // Local Clinical Note state
+  const [noteDraft, setNoteDraft] = useState<ClinicalNote>({
+    templateId: 'general',
+    detectedTeeth: [],
+    chiefComplaint: '',
+    findings: '',
+    procedure: '',
+    indications: '',
+    nextVisit: '',
+    updatedAt: Date.now(),
+  });
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const transcriptBottomRef = useRef<HTMLDivElement | null>(null);
   const isTranscribingThisSession = transcribingSessionId === activeSession?.id;
+
+  // Sync ClinicalNote draft when switching session or saving
+  useEffect(() => {
+    if (!activeSession) return;
+    if (activeSession.clinicalNote) {
+      setNoteDraft(activeSession.clinicalNote);
+    } else if (activeTranscript.length > 0) {
+      setNoteDraft(buildDraftClinicalNote(activeTranscript, 'general'));
+    } else {
+      setNoteDraft({
+        templateId: 'general',
+        detectedTeeth: [],
+        chiefComplaint: '',
+        findings: '',
+        procedure: '',
+        indications: '',
+        nextVisit: '',
+        updatedAt: Date.now(),
+      });
+    }
+  }, [activeSession?.id, activeSession?.clinicalNote]);
+
+  // Extract FDI teeth detected across full transcript
+  const detectedFdiTeeth = useMemo(() => {
+    const joined = activeTranscript.map((s) => s.text).join(' ');
+    return extractFdiTeeth(joined);
+  }, [activeTranscript]);
 
   // Auto-scroll to latest segment as new chunks stream in
   useEffect(() => {
@@ -80,7 +151,7 @@ export const DetailView: React.FC = () => {
     }
   }, [activeTranscript.length, isTranscribingThisSession, autoScroll]);
 
-  // Load and assemble audio for playback if not deleted
+  // Low-RAM audio playback loading using direct WAV Blob concatenation over Int16 chunks
   useEffect(() => {
     let objectUrl: string | null = null;
     let cancelled = false;
@@ -88,18 +159,17 @@ export const DetailView: React.FC = () => {
     async function loadAudio() {
       if (!activeSession || activeSession.audioDeleted) {
         setAudioUrl(null);
+        setTotalAudioDuration(0);
         return;
       }
 
       try {
-        const floatPcm = await audioStore.getCombinedPcmFloat32(activeSession.id);
-        if (cancelled || floatPcm.length === 0) return;
+        const { blob, durationSec } = await audioStore.createWavBlob(activeSession.id);
+        if (cancelled || durationSec === 0) return;
 
-        // Convert 16kHz Float32 PCM into a playable WAV Blob
-        const wavBlob = createWavBlobFromPcm(floatPcm, 16000);
-        objectUrl = URL.createObjectURL(wavBlob);
+        objectUrl = URL.createObjectURL(blob);
         setAudioUrl(objectUrl);
-        setTotalAudioDuration(floatPcm.length / 16000);
+        setTotalAudioDuration(durationSec);
       } catch (err) {
         console.error('Error preparing audio playback:', err);
       }
@@ -113,7 +183,14 @@ export const DetailView: React.FC = () => {
         URL.revokeObjectURL(objectUrl);
       }
     };
-  }, [activeSession?.id, activeSession?.audioDeleted]);
+  }, [activeSession?.id, activeSession?.audioDeleted, activeSession?.durationSec]);
+
+  // Sync audio playbackRate cleanly
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = playbackRate;
+    }
+  }, [playbackRate, audioUrl]);
 
   if (!activeSession) {
     return (
@@ -138,6 +215,7 @@ export const DetailView: React.FC = () => {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
+      audioRef.current.playbackRate = playbackRate;
       audioRef.current.play();
       setIsPlaying(true);
     }
@@ -148,24 +226,22 @@ export const DetailView: React.FC = () => {
       audioRef.current.currentTime = seconds;
       setCurrentTime(seconds);
       if (!isPlaying) {
+        audioRef.current.playbackRate = playbackRate;
         audioRef.current.play();
         setIsPlaying(true);
       }
     }
   };
 
-  // Find active segment matching audio playback
   const activeSegmentIndex = activeTranscript.findIndex(
     (s) => currentTime >= s.start && currentTime <= s.end
   );
 
-  // Filter segments by search
   const filteredSegments = activeTranscript.filter((s) => {
     if (!transcriptSearch.trim()) return true;
     return s.text.toLowerCase().includes(transcriptSearch.toLowerCase());
   });
 
-  // Export handlers
   const handleCopyText = () => {
     const txt = ExportFormatter.toTxt(activeSession, activeTranscript);
     navigator.clipboard.writeText(txt);
@@ -184,7 +260,7 @@ export const DetailView: React.FC = () => {
 
   const handleDownload = (format: 'txt' | 'md' | 'srt' | 'json') => {
     let content = '';
-    let ext = format;
+    const ext = format;
     let mime = 'text/plain';
 
     if (format === 'txt') {
@@ -211,6 +287,45 @@ export const DetailView: React.FC = () => {
     setShowExportMenu(false);
   };
 
+  const handlePrintPdf = () => {
+    setShowExportMenu(false);
+    setTimeout(() => {
+      window.print();
+    }, 100);
+  };
+
+  const handleStartEditMeta = () => {
+    setMetaRefInput(activeSession.reference || '');
+    setMetaTitleInput(activeSession.title || '');
+    setIsEditingMeta(true);
+  };
+
+  const handleSaveMeta = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await updateSessionMeta(activeSession.id, {
+      reference: metaRefInput.trim(),
+      title: metaTitleInput.trim() || activeSession.title,
+    });
+    setIsEditingMeta(false);
+  };
+
+  const handleRetranscribe = () => {
+    const hasManualEdits = activeTranscript.some((s) => s.edited || Boolean(s.speaker));
+    if (hasManualEdits) {
+      openConfirm({
+        title: '¿Volver a transcribir la consulta?',
+        description:
+          'Se volverá a procesar el audio con el modelo y glosario dental actuales. Las ediciones manuales y etiquetas de hablante de esta transcripción se reemplazarán.',
+        confirmText: 'Volver a transcribir',
+        cancelText: 'Cancelar',
+        isDestructive: true,
+        onConfirm: () => startTranscription(activeSession.id, { forceRetranscribe: true }),
+      });
+    } else {
+      startTranscription(activeSession.id, { forceRetranscribe: true });
+    }
+  };
+
   const startEdit = (segment: TranscriptSegment) => {
     setEditingSegmentId(segment.id);
     setEditingText(segment.text);
@@ -219,6 +334,31 @@ export const DetailView: React.FC = () => {
   const saveEdit = async (segmentId: string) => {
     await updateSegmentText(segmentId, editingText.trim());
     setEditingSegmentId(null);
+  };
+
+  const cycleSpeaker = async (segment: TranscriptSegment) => {
+    const currentIndex = SPEAKER_CYCLE.indexOf(segment.speaker);
+    const nextSpeaker = SPEAKER_CYCLE[(currentIndex + 1) % SPEAKER_CYCLE.length];
+    await updateSegmentSpeaker(segment.id, nextSpeaker);
+  };
+
+  const handleAutofillClinicalNote = () => {
+    const draft = buildDraftClinicalNote(activeTranscript, noteDraft.templateId);
+    setNoteDraft(draft);
+    showToast('Ficha autocompletada desde la transcripción local', 'info');
+  };
+
+  const handleSaveClinicalNote = async () => {
+    await saveClinicalNote(activeSession.id, {
+      ...noteDraft,
+      updatedAt: Date.now(),
+    });
+  };
+
+  const handleCopyClinicalNote = () => {
+    const txt = formatClinicalNoteText(activeSession, noteDraft);
+    navigator.clipboard.writeText(txt);
+    showToast('Ficha clínica copiada al portapapeles', 'success');
   };
 
   return (
@@ -233,41 +373,151 @@ export const DetailView: React.FC = () => {
         />
       )}
 
+      {/* Printable Clinical Sheet (Visible only when printing / Save as PDF) */}
+      <div className="hidden print-only space-y-6 text-slate-900">
+        <div className="border-b border-slate-300 pb-4 flex items-start justify-between">
+          <div>
+            <h1 className="text-xl font-bold">Escriba · Registro Clínico Odontológico</h1>
+            <p className="text-sm text-slate-600 mt-1">
+              Paciente / Referencia: <strong>{activeSession.reference || activeSession.title}</strong>
+            </p>
+          </div>
+          <div className="text-right text-xs text-slate-600">
+            <div>{new Date(activeSession.createdAt).toLocaleDateString('es-AR')}</div>
+            <div>Duración: {formatTimeDisplay(activeSession.durationSec)}</div>
+          </div>
+        </div>
+
+        {(activeSession.clinicalNote || noteDraft.procedure || noteDraft.findings) && (
+          <div className="space-y-2 border border-slate-300 rounded-xl p-4 print-break-inside-avoid">
+            <h2 className="text-sm font-bold uppercase tracking-wide">Ficha Clínica</h2>
+            {noteDraft.detectedTeeth.length > 0 && (
+              <p className="text-xs">
+                <strong>Piezas FDI:</strong> {noteDraft.detectedTeeth.join(', ')}
+              </p>
+            )}
+            {noteDraft.chiefComplaint && (
+              <p className="text-xs">
+                <strong>Motivo / Relato:</strong> {noteDraft.chiefComplaint}
+              </p>
+            )}
+            {noteDraft.findings && (
+              <p className="text-xs">
+                <strong>Hallazgos:</strong> {noteDraft.findings}
+              </p>
+            )}
+            {noteDraft.procedure && (
+              <p className="text-xs">
+                <strong>Procedimiento:</strong> {noteDraft.procedure}
+              </p>
+            )}
+            {noteDraft.indications && (
+              <p className="text-xs">
+                <strong>Indicaciones:</strong> {noteDraft.indications}
+              </p>
+            )}
+            {noteDraft.nextVisit && (
+              <p className="text-xs">
+                <strong>Próximo control:</strong> {noteDraft.nextVisit}
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="space-y-3">
+          <h2 className="text-sm font-bold uppercase tracking-wide">Transcripción de la consulta</h2>
+          {activeTranscript.map((seg) => (
+            <div key={seg.id} className="text-xs leading-relaxed border-b border-slate-100 pb-2">
+              <span className="font-mono text-slate-500 mr-2">
+                [{formatTimeDisplay(seg.start)}]
+              </span>
+              {seg.speaker && <strong className="mr-1.5">{seg.speaker}:</strong>}
+              <span>{seg.text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Top Navigation & Session Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-slate-800/80">
-        <div className="flex items-center gap-3">
+      <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-slate-800/80">
+        <div className="flex items-start sm:items-center gap-3 min-w-0">
           <button
             onClick={() => setView('home')}
-            className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center shrink-0"
             title="Volver a la lista de grabaciones"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-              {activeSession.reference ? activeSession.reference : activeSession.title}
-            </h1>
-            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              <span>{new Date(activeSession.createdAt).toLocaleDateString('es-AR')}</span>
-              <span aria-hidden="true">·</span>
-              <span className="font-mono tabular-nums">{formatTimeDisplay(activeSession.durationSec)}</span>
-              {activeSession.modelTierUsed && (
-                <>
-                  <span aria-hidden="true">·</span>
-                  <span>Modelo: {activeSession.modelTierUsed}</span>
-                </>
-              )}
+
+          {isEditingMeta ? (
+            <form onSubmit={handleSaveMeta} className="flex flex-wrap items-center gap-2">
+              <input
+                type="text"
+                value={metaRefInput}
+                onChange={(e) => setMetaRefInput(e.target.value)}
+                placeholder="Referencia / Paciente (ej. M.G.)"
+                className="px-3 py-1.5 text-xs rounded-xl bg-white dark:bg-slate-900 border border-teal-500 text-slate-900 dark:text-slate-100 focus:outline-hidden"
+                autoFocus
+              />
+              <input
+                type="text"
+                value={metaTitleInput}
+                onChange={(e) => setMetaTitleInput(e.target.value)}
+                placeholder="Título de la consulta"
+                className="px-3 py-1.5 text-xs rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-hidden"
+              />
+              <button
+                type="submit"
+                className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-teal-600 text-white hover:bg-teal-700 min-h-[36px]"
+              >
+                Guardar
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsEditingMeta(false)}
+                className="px-2.5 py-1.5 text-xs text-slate-500 hover:text-slate-800 min-h-[36px]"
+              >
+                Cancelar
+              </button>
+            </form>
+          ) : (
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 truncate">
+                  {activeSession.reference ? activeSession.reference : activeSession.title}
+                </h1>
+                <button
+                  type="button"
+                  onClick={handleStartEditMeta}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center shrink-0"
+                  title="Editar nombre o referencia del paciente"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <span>{new Date(activeSession.createdAt).toLocaleDateString('es-AR')}</span>
+                <span aria-hidden="true">·</span>
+                <span className="font-mono tabular-nums">{formatTimeDisplay(activeSession.durationSec)}</span>
+                {activeSession.modelTierUsed && (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <span>
+                      Modelo: {activeSession.modelTierUsed === 'max' ? 'Máxima precisión' : 'Estándar clínico'}
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Top Actions */}
-        <div className="flex items-center gap-2.5">
-          {/* Copy For AI Button */}
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
           {activeTranscript.length > 0 && (
             <button
               onClick={handleCopyForAi}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-200 border border-teal-200 dark:border-teal-800/80 hover:bg-teal-100 dark:hover:bg-teal-900/40 transition-colors whitespace-nowrap min-h-[40px]"
+              className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-200 border border-teal-200 dark:border-teal-800/80 hover:bg-teal-100 dark:hover:bg-teal-900/40 transition-colors whitespace-nowrap min-h-[44px]"
               title="Copia el texto limpio con encabezado clínico estructurado para enviar a tu IA"
             >
               {copiedType === 'ai' ? <Check className="w-3.5 h-3.5 text-teal-600" /> : <Sparkles className="w-3.5 h-3.5 text-teal-600" />}
@@ -275,19 +525,25 @@ export const DetailView: React.FC = () => {
             </button>
           )}
 
-          {/* Export Dropdown */}
           {activeTranscript.length > 0 && (
             <div className="relative">
               <button
                 onClick={() => setShowExportMenu(!showExportMenu)}
-                className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors min-h-[40px]"
+                className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors min-h-[44px] whitespace-nowrap"
               >
                 <Download className="w-3.5 h-3.5 text-slate-500" />
                 <span>Exportar</span>
               </button>
 
               {showExportMenu && (
-                <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl p-1.5 z-40 space-y-0.5 animate-fade-in">
+                <div className="absolute right-0 mt-2 w-60 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl p-1.5 z-40 space-y-0.5">
+                  <button
+                    onClick={handlePrintPdf}
+                    className="w-full text-left px-3 py-2.5 text-xs font-semibold rounded-lg text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-950/50 flex items-center justify-between"
+                  >
+                    <span>Imprimir / Guardar PDF</span>
+                    <Printer className="w-3.5 h-3.5" />
+                  </button>
                   <button
                     onClick={handleCopyText}
                     className="w-full text-left px-3 py-2 text-xs rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between"
@@ -328,7 +584,6 @@ export const DetailView: React.FC = () => {
             </div>
           )}
 
-          {/* Delete Consultation Button */}
           <button
             onClick={() => {
               openConfirm({
@@ -340,26 +595,26 @@ export const DetailView: React.FC = () => {
                 onConfirm: () => deleteSession(activeSession.id),
               });
             }}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-slate-200 dark:border-slate-800 transition-colors min-h-[40px]"
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-slate-200 dark:border-slate-800 transition-colors min-h-[44px] whitespace-nowrap"
             title="Eliminar consulta y transcripción"
           >
             <Trash2 className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Eliminar consulta</span>
+            <span className="hidden sm:inline">Eliminar</span>
           </button>
         </div>
       </div>
 
-      {/* Fallback Notice for WebGPU to WASM degradation */}
+      {/* Fallback Notice */}
       {transcriptionFallbackNotice && (
-        <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 flex items-center gap-2.5">
+        <div className="no-print p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 flex items-center gap-2.5">
           <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
           <span>{transcriptionFallbackNotice}</span>
         </div>
       )}
 
       {/* Main 2-Column Responsive Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column: Audio Player & Action Controls (5 cols on lg) */}
+      <div className="no-print grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Left Column: Audio Player & Action Controls */}
         <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-6 self-start">
           {/* Synchronized Audio Player Card */}
           {!activeSession.audioDeleted && audioUrl ? (
@@ -374,7 +629,6 @@ export const DetailView: React.FC = () => {
                 </span>
               </div>
 
-              {/* Progress Scrubber */}
               <input
                 type="range"
                 min="0"
@@ -385,27 +639,59 @@ export const DetailView: React.FC = () => {
                 className="w-full accent-teal-600 cursor-pointer"
               />
 
-              {/* Playback Controls */}
-              <div className="flex items-center justify-center gap-4 pt-1">
-                <button
-                  onClick={() => seekTo(Math.max(0, currentTime - 5))}
-                  className="p-2.5 rounded-full text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                  title="Retroceder 5 segundos"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                </button>
+              {/* Playback Controls + Speed Selector */}
+              <div className="flex items-center justify-between gap-2 pt-1">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => seekTo(Math.max(0, currentTime - 5))}
+                    className="p-2.5 rounded-full text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                    title="Retroceder 5 segundos"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </button>
 
-                <button
-                  onClick={handleTogglePlay}
-                  className="w-12 h-12 rounded-full bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center shadow-md shadow-teal-600/20 active:scale-95 transition-all min-h-[48px] min-w-[48px]"
-                >
-                  {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-0.5" />}
-                </button>
+                  <button
+                    onClick={handleTogglePlay}
+                    className="w-12 h-12 rounded-full bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center shadow-md shadow-teal-600/20 active:scale-95 transition-all min-h-[48px] min-w-[48px]"
+                  >
+                    {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-0.5" />}
+                  </button>
+                </div>
+
+                {/* Speed Control */}
+                <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+                  {PLAYBACK_SPEEDS.map((spd) => (
+                    <button
+                      key={spd}
+                      type="button"
+                      onClick={() => setPlaybackRate(spd)}
+                      className={`px-2 py-1 text-[11px] font-mono font-semibold rounded-lg transition-colors min-h-[32px] ${
+                        playbackRate === spd
+                          ? 'bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 shadow-xs'
+                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      {spd}x
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <p className="text-[11px] text-center text-slate-400 dark:text-slate-500">
                 Al tocar cualquier fragmento de la transcripción, el audio saltará a ese momento.
               </p>
+
+              {/* Append voice note button */}
+              {!isTranscribingThisSession && (
+                <button
+                  type="button"
+                  onClick={() => appendRecordingToSession(activeSession.id)}
+                  className="w-full py-2.5 px-3 rounded-xl text-xs font-semibold text-teal-800 dark:text-teal-200 bg-teal-50/70 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/50 border border-teal-200/80 dark:border-teal-800/60 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
+                >
+                  <Mic className="w-3.5 h-3.5 text-teal-600" />
+                  <span>Anexar nota de voz a esta consulta</span>
+                </button>
+              )}
             </div>
           ) : activeSession.audioDeleted ? (
             <div className="p-5 rounded-3xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 text-center space-y-2">
@@ -419,10 +705,10 @@ export const DetailView: React.FC = () => {
             </div>
           ) : null}
 
-          {/* Transcription CTA or Progress Bar Card */}
+          {/* Transcription CTA, Progress, or Completed Data Management Card */}
           {activeSession.status !== 'completed' || isTranscribingThisSession ? (
             <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-teal-200/90 dark:border-teal-900/60 shadow-md shadow-teal-500/5 space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5">
                   <div className="w-9 h-9 rounded-xl bg-teal-50 dark:bg-teal-950/60 flex items-center justify-center text-teal-600 dark:text-teal-400">
                     <Sparkles className="w-4 h-4" />
@@ -453,21 +739,22 @@ export const DetailView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Engine Hardware & Wake Lock Badges */}
                 {isTranscribingThisSession && (
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-300 font-mono">
                     {wakeLockActive && (
                       <span
-                        className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200/60 dark:border-amber-900/60 flex items-center gap-1"
-                        title="La pantalla se mantendrá activa mientras transcribe para evitar que el teléfono se bloquee"
+                        className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300"
+                        title="La pantalla se mantendrá activa mientras transcribe"
                       >
-                        <Sun className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                        <span>Pantalla activa</span>
+                        <Sun className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Pantalla activa</span>
                       </span>
                     )}
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center gap-1">
-                      <Cpu className="w-3 h-3 text-teal-600" />
-                      {transcriptionProgress?.activeBackend ? transcriptionProgress.activeBackend.toUpperCase() : 'LOCAL'}
+                    <span className="inline-flex items-center gap-1">
+                      <Cpu className="w-3.5 h-3.5 text-teal-600" />
+                      {transcriptionProgress?.activeBackend
+                        ? transcriptionProgress.activeBackend.toUpperCase()
+                        : 'LOCAL'}
                     </span>
                   </div>
                 )}
@@ -475,18 +762,16 @@ export const DetailView: React.FC = () => {
 
               {isTranscribingThisSession ? (
                 <div className="space-y-3.5 pt-1">
-                  {/* Progress Info Header */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-semibold text-slate-800 dark:text-slate-200">
-                        Segmento {transcriptionProgress?.currentSegment || 1} de {transcriptionProgress?.totalSegments || 1}
+                        Fragmento {transcriptionProgress?.currentSegment || 1} de {transcriptionProgress?.totalSegments || 1}
                       </span>
                       <span className="font-mono tabular-nums font-bold text-teal-600 dark:text-teal-400 text-sm">
                         {transcriptionProgress?.percent || 0}%
                       </span>
                     </div>
 
-                    {/* Progress Bar */}
                     <div className="h-2.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-linear-to-r from-teal-500 to-teal-600 rounded-full transition-all duration-300"
@@ -500,20 +785,13 @@ export const DetailView: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Audio computation pulse visualizer */}
                   <div className="flex items-center justify-center gap-1 py-1.5 px-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl">
-                    <div className="w-1 bg-teal-500 rounded-full animate-bounce h-3" style={{ animationDelay: '0ms' }} />
-                    <div className="w-1 bg-teal-500 rounded-full animate-bounce h-5" style={{ animationDelay: '150ms' }} />
-                    <div className="w-1 bg-teal-500 rounded-full animate-bounce h-2" style={{ animationDelay: '300ms' }} />
-                    <div className="w-1 bg-teal-500 rounded-full animate-bounce h-6" style={{ animationDelay: '100ms' }} />
-                    <div className="w-1 bg-teal-500 rounded-full animate-bounce h-4" style={{ animationDelay: '250ms' }} />
-                    <div className="w-1 bg-teal-500 rounded-full animate-bounce h-3" style={{ animationDelay: '350ms' }} />
+                    <RotateCw className="w-3.5 h-3.5 text-teal-600 animate-spin shrink-0" />
                     <span className="ml-2 text-[11px] text-slate-600 dark:text-slate-300 font-medium truncate">
                       {transcriptionProgress?.statusText || 'Procesando modelo Whisper...'}
                     </span>
                   </div>
 
-                  {/* Real-time Last Detected Phrase Preview Box */}
                   {transcriptionProgress?.lastTranscribedText && (
                     <div className="p-3 rounded-2xl bg-teal-50/70 dark:bg-teal-950/40 border border-teal-200/70 dark:border-teal-800/60 space-y-1">
                       <div className="flex items-center gap-1.5 text-[10px] font-semibold tracking-wide uppercase text-teal-700 dark:text-teal-300">
@@ -526,18 +804,16 @@ export const DetailView: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Browser reload protection & resumability notice */}
                   <div className="p-3 rounded-2xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-900/40 text-[11px] text-amber-900 dark:text-amber-200 space-y-1">
                     <div className="flex items-center gap-1.5 font-semibold text-amber-800 dark:text-amber-300">
                       <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
                       <span>Protección contra recargas activa</span>
                     </div>
                     <p className="text-[10.5px] leading-relaxed text-amber-800/90 dark:text-amber-300/90">
-                      Si intentas recargar o cerrar la pestaña, el navegador te pedirá confirmación. No perderás lo transcrito: cada fragmento ya está guardado en tu memoria local y podrás reanudarlo cuando quieras.
+                      Cada fragmento se guarda al instante en tu dispositivo para reanudarlo cuando quieras.
                     </p>
                   </div>
 
-                  {/* Collapsible Activity Logs Drawer */}
                   <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
                     <button
                       type="button"
@@ -566,10 +842,9 @@ export const DetailView: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Stop transcription safely */}
                   <button
                     onClick={() => cancelTranscription()}
-                    className="w-full py-2.5 px-4 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    className="w-full py-2.5 px-4 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors min-h-[44px]"
                   >
                     Detener transcripción (guarda progreso actual)
                   </button>
@@ -590,33 +865,42 @@ export const DetailView: React.FC = () => {
               )}
             </div>
           ) : (
-            // Completed Session Data Management Card
             <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-3">
               <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-900 dark:text-slate-100">
                 <HardDrive className="w-4 h-4 text-slate-500" />
-                <span>Gestión de datos locales</span>
+                <span>Acciones y datos locales</span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Esta consulta y su texto residen exclusivamente en este navegador. Puedes liberar espacio borrando el audio original o eliminar la consulta por completo.
+                Puedes volver a transcribir si cambiaste el modelo o agregaste términos al glosario, o liberar el audio para ahorrar espacio.
               </p>
               <div className="space-y-2 pt-1">
                 {!activeSession.audioDeleted && (
-                  <button
-                    onClick={() => {
-                      openConfirm({
-                        title: '¿Borrar archivo de audio?',
-                        description: 'Se liberará el espacio de almacenamiento del audio en tu dispositivo (~115 MB/hora). La transcripción de texto se conservará intacta.',
-                        confirmText: 'Borrar solo audio',
-                        cancelText: 'Cancelar',
-                        isDestructive: false,
-                        onConfirm: () => deleteAudioForSession(activeSession.id),
-                      });
-                    }}
-                    className="w-full py-2.5 px-3 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-2 min-h-[40px]"
-                  >
-                    <Trash2 className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Borrar solo el archivo de audio</span>
-                  </button>
+                  <>
+                    <button
+                      onClick={handleRetranscribe}
+                      className="w-full py-2.5 px-3 rounded-xl text-xs font-semibold text-teal-800 dark:text-teal-200 bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900/40 border border-teal-200/80 dark:border-teal-800/60 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 text-teal-600" />
+                      <span>Volver a transcribir con ajustes actuales</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        openConfirm({
+                          title: '¿Borrar archivo de audio?',
+                          description: 'Se liberará el espacio de almacenamiento del audio en tu dispositivo (~115 MB/hora). La transcripción de texto se conservará intacta.',
+                          confirmText: 'Borrar solo audio',
+                          cancelText: 'Cancelar',
+                          isDestructive: false,
+                          onConfirm: () => deleteAudioForSession(activeSession.id),
+                        });
+                      }}
+                      className="w-full py-2.5 px-3 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Borrar solo el archivo de audio</span>
+                    </button>
+                  </>
                 )}
 
                 <button
@@ -630,7 +914,7 @@ export const DetailView: React.FC = () => {
                       onConfirm: () => deleteSession(activeSession.id),
                     });
                   }}
-                  className="w-full py-2.5 px-3 rounded-xl text-xs font-medium text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 border border-rose-200 dark:border-rose-900/60 transition-colors flex items-center justify-center gap-2 min-h-[40px]"
+                  className="w-full py-2.5 px-3 rounded-xl text-xs font-medium text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 border border-rose-200 dark:border-rose-900/60 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Eliminar consulta completa</span>
@@ -640,259 +924,479 @@ export const DetailView: React.FC = () => {
           )}
         </div>
 
-        {/* Right Column: Transcript Content & Live Search (7 cols on lg) */}
+        {/* Right Column: Transcript OR Structured Clinical Sheet */}
         <div className="lg:col-span-7 space-y-4">
-          {/* Transcript Control Bar */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
-            {/* Search Input */}
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={transcriptSearch}
-                onChange={(e) => setTranscriptSearch(e.target.value)}
-                placeholder="Buscar en el texto de la consulta..."
-                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-transparent focus:border-teal-500 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-hidden"
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* Auto Scroll toggle during transcription */}
-              {isTranscribingThisSession && (
-                <button
-                  type="button"
-                  onClick={() => setAutoScroll(!autoScroll)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 ${
-                    autoScroll
-                      ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800/60'
-                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
-                  title="Desplaza la vista automáticamente a medida que llegan nuevas frases"
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full ${autoScroll ? 'bg-teal-500 animate-ping' : 'bg-slate-400'}`} />
-                  <span>Auto-scroll</span>
-                </button>
-              )}
-
-              {/* Toggle Timestamps */}
+          {/* Mode Switcher + Detected FDI Teeth strip */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-900/80 rounded-xl border border-slate-200/60 dark:border-slate-800/60 self-start">
               <button
-                onClick={() => setShowTimestamps(!showTimestamps)}
-                className="px-3 py-1.5 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap shrink-0 transition-colors flex items-center gap-1.5"
+                type="button"
+                onClick={() => setRightTab('transcript')}
+                className={`px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap min-h-[36px] ${
+                  rightTab === 'transcript'
+                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
               >
-                <Clock className="w-3.5 h-3.5 text-slate-400" />
-                <span>{showTimestamps ? 'Ocultar tiempos' : 'Ver tiempos'}</span>
+                <FileText className="w-3.5 h-3.5 text-teal-600" />
+                <span>Transcripción ({activeTranscript.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setRightTab('clinical_note')}
+                className={`px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap min-h-[36px] ${
+                  rightTab === 'clinical_note'
+                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                <ClipboardList className="w-3.5 h-3.5 text-teal-600" />
+                <span>Ficha clínica</span>
               </button>
             </div>
-          </div>
 
-          {/* Transcript Segments List */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs p-5 sm:p-6 min-h-[420px] flex flex-col">
-            {filteredSegments.length > 0 ? (
-              <div className="max-h-[calc(100vh-270px)] min-h-[400px] overflow-y-auto pr-2.5 scrollbar-thin space-y-4">
-                {filteredSegments.map((segment, idx) => {
-                  const isActive = idx === activeSegmentIndex;
-                  const isEditing = editingSegmentId === segment.id;
-                  const isLatestStreaming = isTranscribingThisSession && idx === filteredSegments.length - 1;
-
-                  return (
-                    <div
-                      key={segment.id}
-                      onClick={() => !isEditing && seekTo(segment.start)}
-                      className={`p-3.5 rounded-2xl transition-all cursor-pointer group ${
-                        isActive
-                          ? 'bg-teal-50/80 dark:bg-teal-950/40 ring-1 ring-teal-500/40'
-                          : isLatestStreaming
-                          ? 'bg-teal-50/40 dark:bg-teal-950/20 ring-1 ring-teal-400/40'
-                          : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        {/* Timestamp & Speaker Tag */}
-                        <div className="flex items-center gap-2 text-xs font-mono tabular-nums text-slate-400 dark:text-slate-500">
-                          {showTimestamps && (
-                            <span>
-                              {formatTimeDisplay(segment.start)} - {formatTimeDisplay(segment.end)}
-                            </span>
-                          )}
-                          {segment.speaker && (
-                            <span className="font-semibold text-teal-700 dark:text-teal-400">
-                              {segment.speaker}
-                            </span>
-                          )}
-                          {segment.edited && (
-                            <span className="text-[10px] text-slate-400">(editado)</span>
-                          )}
-                          {isLatestStreaming && (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-sans font-medium bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300">
-                              <span className="w-1 h-1 rounded-full bg-teal-500 animate-pulse" />
-                              Reciente
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Edit Button */}
-                        {!isEditing && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              startEdit(segment);
-                            }}
-                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-opacity"
-                            title="Editar segmento"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Segment Text or Edit Input */}
-                      {isEditing ? (
-                        <div className="mt-2 space-y-2" onClick={(e) => e.stopPropagation()}>
-                          <textarea
-                            value={editingText}
-                            onChange={(e) => setEditingText(e.target.value)}
-                            className="w-full p-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-teal-500 text-slate-900 dark:text-slate-100 focus:outline-hidden"
-                            rows={2}
-                          />
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => setEditingSegmentId(null)}
-                              className="px-2.5 py-1 text-xs text-slate-500 hover:text-slate-800"
-                            >
-                              Cancelar
-                            </button>
-                            <button
-                              onClick={() => saveEdit(segment.id)}
-                              className="px-3 py-1 text-xs font-semibold rounded-lg bg-teal-600 text-white hover:bg-teal-700"
-                            >
-                              Guardar
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="mt-1 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed">
-                          {highlightSearchTerm(segment.text, transcriptSearch)}
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
-
-                {/* Real-time next chunk in-progress placeholder */}
-                {isTranscribingThisSession && (
-                  <div className="p-4 rounded-2xl border border-dashed border-teal-300 dark:border-teal-700 bg-teal-50/50 dark:bg-teal-950/20 flex items-center gap-3">
-                    <div className="w-6 h-6 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center shrink-0">
-                      <RotateCw className="w-3.5 h-3.5 text-teal-600 animate-spin" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-teal-900 dark:text-teal-200">
-                          Procesando siguiente bloque de voz...
-                        </span>
-                        {transcriptionProgress?.currentSegmentTime && (
-                          <span className="text-[10px] font-mono text-teal-700 dark:text-teal-400">
-                            ({transcriptionProgress.currentSegmentTime})
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                        {transcriptionProgress?.lastTranscribedText
-                          ? `Último texto: "${transcriptionProgress.lastTranscribedText}"`
-                          : 'Whisper analizando fragmento acústico...'}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                <div ref={transcriptBottomRef} />
-              </div>
-            ) : isTranscribingThisSession ? (
-              <div className="py-16 px-4 text-center space-y-4">
-                <div className="relative inline-flex items-center justify-center">
-                  <div className="w-16 h-16 rounded-full bg-teal-100 dark:bg-teal-950/70 flex items-center justify-center text-teal-600 animate-pulse">
-                    <RotateCw className="w-7 h-7 animate-spin" />
-                  </div>
-                </div>
-                <div className="max-w-md mx-auto space-y-1.5">
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                    Iniciando transcripción en tiempo real...
-                  </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                    Whisper está analizando el primer fragmento de voz. En cuanto termine, aparecerá aquí inmediatamente y continuará con los siguientes.
-                  </p>
-                </div>
-                {transcriptionProgress && (
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-mono text-slate-600 dark:text-slate-300">
-                    <Radio className="w-3 h-3 text-teal-600 animate-pulse" />
-                    <span>{transcriptionProgress.statusText}</span>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="py-20 text-center space-y-2">
-                <FileText className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-700" />
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {transcriptSearch
-                    ? 'No se encontraron coincidencias para la búsqueda.'
-                    : 'Esta consulta todavía no ha sido transcrita.'}
-                </p>
+            {detectedFdiTeeth.length > 0 && (
+              <div className="text-xs text-slate-600 dark:text-slate-300 flex items-center gap-1.5 flex-wrap">
+                <span className="font-medium text-slate-500 dark:text-slate-400">Piezas FDI:</span>
+                <span className="font-mono font-semibold text-teal-700 dark:text-teal-300">
+                  {detectedFdiTeeth.join(' · ')}
+                </span>
               </div>
             )}
           </div>
+
+          {rightTab === 'clinical_note' ? (
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs p-5 sm:p-6 space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    Ficha clínica estructurada (100% local)
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Organizá la historia clínica por especialidad y copiala o imprimila directo en PDF.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAutofillClinicalNote}
+                  disabled={activeTranscript.length === 0}
+                  className="px-3.5 py-2 rounded-xl text-xs font-semibold text-teal-800 dark:text-teal-200 bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800/80 hover:bg-teal-100 disabled:opacity-50 transition-colors whitespace-nowrap min-h-[40px]"
+                >
+                  Autocompletar desde transcripción
+                </button>
+              </div>
+
+              {/* Template Selector */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Plantilla odontológica
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {CLINICAL_TEMPLATES.map((tpl) => {
+                    const active = noteDraft.templateId === tpl.id;
+                    return (
+                      <button
+                        key={tpl.id}
+                        type="button"
+                        onClick={() =>
+                          setNoteDraft((prev) => ({ ...prev, templateId: tpl.id as ClinicalTemplateId }))
+                        }
+                        className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors min-h-[36px] ${
+                          active
+                            ? 'border-teal-600 bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-200 font-semibold'
+                            : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        {tpl.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Editable Structured Clinical Fields */}
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                    Piezas dentarias (FDI, separadas por coma)
+                  </label>
+                  <input
+                    type="text"
+                    value={noteDraft.detectedTeeth.join(', ')}
+                    onChange={(e) =>
+                      setNoteDraft((prev) => ({
+                        ...prev,
+                        detectedTeeth: e.target.value
+                          .split(',')
+                          .map((t) => t.trim())
+                          .filter(Boolean),
+                      }))
+                    }
+                    placeholder="Ej: 1.6, 4.8"
+                    className="w-full mt-1 px-3 py-2 text-xs font-mono rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-teal-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                    Motivo de consulta / Relato del paciente
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={noteDraft.chiefComplaint}
+                    onChange={(e) => setNoteDraft((p) => ({ ...p, chiefComplaint: e.target.value }))}
+                    placeholder="Dolor a la masticación, sensibilidad al frío, control..."
+                    className="w-full mt-1 px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-teal-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                    Hallazgos clínicos / Diagnóstico
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={noteDraft.findings}
+                    onChange={(e) => setNoteDraft((p) => ({ ...p, findings: e.target.value }))}
+                    placeholder="Caries profunda oclusal, filtración de restauración, periapical sin lesión..."
+                    className="w-full mt-1 px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-teal-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                    Procedimiento realizado
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={noteDraft.procedure}
+                    onChange={(e) => setNoteDraft((p) => ({ ...p, procedure: e.target.value }))}
+                    placeholder={
+                      CLINICAL_TEMPLATES.find((t) => t.id === noteDraft.templateId)
+                        ?.defaultProcedureHint
+                    }
+                    className="w-full mt-1 px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-teal-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                      Indicaciones / Medicación
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={noteDraft.indications}
+                      onChange={(e) => setNoteDraft((p) => ({ ...p, indications: e.target.value }))}
+                      placeholder="Ibuprofeno 600 mg c/8h si hay dolor..."
+                      className="w-full mt-1 px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-teal-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                      Próximo control / Plan
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={noteDraft.nextVisit}
+                      onChange={(e) => setNoteDraft((p) => ({ ...p, nextVisit: e.target.value }))}
+                      placeholder="Citar en 15 días para obturación definitiva..."
+                      className="w-full mt-1 px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-teal-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-end gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={handleCopyClinicalNote}
+                  className="px-4 py-2.5 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center gap-1.5 min-h-[44px]"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copiar ficha</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveClinicalNote}
+                  className="px-5 py-2.5 rounded-xl text-xs font-semibold text-white bg-teal-600 hover:bg-teal-700 transition-colors flex items-center gap-1.5 min-h-[44px]"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Guardar ficha</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Transcript Control Bar */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={transcriptSearch}
+                    onChange={(e) => setTranscriptSearch(e.target.value)}
+                    placeholder="Buscar en el texto de la consulta..."
+                    className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-transparent focus:border-teal-500 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-hidden min-h-[36px]"
+                  />
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {isTranscribingThisSession && (
+                    <button
+                      type="button"
+                      onClick={() => setAutoScroll(!autoScroll)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 min-h-[36px] ${
+                        autoScroll
+                          ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800/60'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${autoScroll ? 'bg-teal-500 animate-ping' : 'bg-slate-400'}`} />
+                      <span>Auto-scroll</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setHighlightFdi(!highlightFdi)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors min-h-[36px] ${
+                      highlightFdi
+                        ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800/60'
+                        : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    {highlightFdi ? 'Piezas FDI: Sí' : 'Piezas FDI: No'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowTimestamps(!showTimestamps)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap transition-colors min-h-[36px]"
+                  >
+                    {showTimestamps ? 'Ocultar tiempos' : 'Mostrar tiempos'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Transcript Feed */}
+              <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs p-4 sm:p-6 min-h-[400px]">
+                {filteredSegments.length > 0 ? (
+                  <div className="space-y-3">
+                    {filteredSegments.map((segment, index) => {
+                      const isActive = index === activeSegmentIndex;
+                      const isEditing = editingSegmentId === segment.id;
+                      const isLatestStreaming = isTranscribingThisSession && index === filteredSegments.length - 1;
+
+                      return (
+                        <div
+                          key={segment.id}
+                          onClick={() => !isEditing && audioUrl && seekTo(segment.start)}
+                          className={`group p-3.5 rounded-2xl transition-all border ${
+                            isActive
+                              ? 'bg-teal-50/70 dark:bg-teal-950/40 border-teal-300 dark:border-teal-800 shadow-xs'
+                              : isLatestStreaming
+                              ? 'bg-teal-50/30 dark:bg-teal-950/20 border-teal-200/80 dark:border-teal-800/50'
+                              : 'border-transparent hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:border-slate-200/60 dark:hover:border-slate-700/60'
+                          } ${audioUrl ? 'cursor-pointer' : ''}`}
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            {/* Timestamp & Metadata */}
+                            <div className="flex flex-wrap items-center gap-2 text-xs font-mono tabular-nums text-slate-400 dark:text-slate-500">
+                              {showTimestamps && (
+                                <span>
+                                  {formatTimeDisplay(segment.start)} - {formatTimeDisplay(segment.end)}
+                                </span>
+                              )}
+                              {segment.speaker && (
+                                <span
+                                  className={`font-sans font-semibold ${
+                                    segment.speaker === 'Paciente'
+                                      ? 'text-indigo-700 dark:text-indigo-300'
+                                      : segment.speaker === 'Asistente'
+                                      ? 'text-amber-700 dark:text-amber-300'
+                                      : 'text-teal-700 dark:text-teal-400'
+                                  }`}
+                                >
+                                  · {segment.speaker}
+                                </span>
+                              )}
+                              {segment.edited && (
+                                <span className="font-sans text-[11px] text-slate-400">· editado</span>
+                              )}
+                              {isLatestStreaming && (
+                                <span className="font-sans text-[11px] font-medium text-teal-700 dark:text-teal-300">
+                                  · Reciente
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Always-accessible Touch Actions: Speaker Role + Edit */}
+                            {!isEditing && (
+                              <div className="flex items-center gap-1 opacity-100 sm:opacity-75 sm:group-hover:opacity-100 transition-opacity">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    cycleSpeaker(segment);
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-xl text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700 flex items-center gap-1 min-h-[36px]"
+                                  title="Cambiar hablante (Odontólogo / Paciente / Asistente)"
+                                >
+                                  <UserCheck className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                                  <span>{segment.speaker || 'Hablante'}</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    startEdit(segment);
+                                  }}
+                                  className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-200/70 dark:hover:bg-slate-700 min-h-[36px] min-w-[36px] flex items-center justify-center"
+                                  title="Editar texto del fragmento"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {isEditing ? (
+                            <div className="mt-2 space-y-2" onClick={(e) => e.stopPropagation()}>
+                              <textarea
+                                value={editingText}
+                                onChange={(e) => setEditingText(e.target.value)}
+                                className="w-full p-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-teal-500 text-slate-900 dark:text-slate-100 focus:outline-hidden"
+                                rows={3}
+                              />
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => setEditingSegmentId(null)}
+                                  className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-800 min-h-[36px]"
+                                >
+                                  Cancelar
+                                </button>
+                                <button
+                                  onClick={() => saveEdit(segment.id)}
+                                  className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-teal-600 text-white hover:bg-teal-700 min-h-[36px]"
+                                >
+                                  Guardar
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="mt-1.5 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed">
+                              {renderFormattedSegmentText(segment.text, transcriptSearch, highlightFdi)}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {isTranscribingThisSession && (
+                      <div className="p-4 rounded-2xl border border-dashed border-teal-300 dark:border-teal-700 bg-teal-50/50 dark:bg-teal-950/20 flex items-center gap-3">
+                        <div className="w-6 h-6 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center shrink-0">
+                          <RotateCw className="w-3.5 h-3.5 text-teal-600 animate-spin" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-teal-900 dark:text-teal-200">
+                              Procesando siguiente bloque de voz...
+                            </span>
+                            {transcriptionProgress?.currentSegmentTime && (
+                              <span className="text-[10px] font-mono text-teal-700 dark:text-teal-400">
+                                ({transcriptionProgress.currentSegmentTime})
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                            {transcriptionProgress?.lastTranscribedText
+                              ? `Último texto: "${transcriptionProgress.lastTranscribedText}"`
+                              : 'Whisper analizando fragmento acústico...'}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    <div ref={transcriptBottomRef} />
+                  </div>
+                ) : isTranscribingThisSession ? (
+                  <div className="py-16 px-4 text-center space-y-4">
+                    <div className="relative inline-flex items-center justify-center">
+                      <div className="w-16 h-16 rounded-full bg-teal-100 dark:bg-teal-950/70 flex items-center justify-center text-teal-600 animate-pulse">
+                        <RotateCw className="w-7 h-7 animate-spin" />
+                      </div>
+                    </div>
+                    <div className="max-w-md mx-auto space-y-1.5">
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                        Iniciando transcripción en tiempo real...
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Whisper está analizando el primer fragmento de voz. En cuanto termine, aparecerá aquí inmediatamente.
+                      </p>
+                    </div>
+                    {transcriptionProgress && (
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-mono text-slate-600 dark:text-slate-300">
+                        <Radio className="w-3 h-3 text-teal-600 animate-pulse" />
+                        <span>{transcriptionProgress.statusText}</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="py-20 text-center space-y-2">
+                    <FileText className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-700" />
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {transcriptSearch
+                        ? 'No se encontraron coincidencias para la búsqueda.'
+                        : 'Esta consulta todavía no ha sido transcrita.'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-// Search highlighter utility
-function highlightSearchTerm(text: string, search: string) {
-  if (!search.trim()) return text;
-  const parts = text.split(new RegExp(`(${search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
-  return parts.map((part, i) =>
-    part.toLowerCase() === search.toLowerCase() ? (
-      <mark key={i} className="bg-amber-200 dark:bg-amber-900/60 text-slate-900 dark:text-slate-100 px-0.5 rounded">
-        {part}
-      </mark>
-    ) : (
-      part
-    )
-  );
-}
-
-// Convert PCM Float32Array to 16kHz WAV Blob in memory for browser audio playback
-function createWavBlobFromPcm(samples: Float32Array, sampleRate: number): Blob {
-  const buffer = new ArrayBuffer(44 + samples.length * 2);
-  const view = new DataView(buffer);
-
-  const writeString = (offset: number, str: string) => {
-    for (let i = 0; i < str.length; i++) {
-      view.setUint8(offset + i, str.charCodeAt(i));
-    }
-  };
-
-  // RIFF header
-  writeString(0, 'RIFF');
-  view.setUint32(4, 36 + samples.length * 2, true);
-  writeString(8, 'WAVE');
-  // fmt chunk
-  writeString(12, 'fmt ');
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true); // PCM format
-  view.setUint16(22, 1, true); // Mono
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * 2, true); // Byte rate
-  view.setUint16(32, 2, true); // Block align
-  view.setUint16(34, 16, true); // Bits per sample
-  // data chunk
-  writeString(36, 'data');
-  view.setUint32(40, samples.length * 2, true);
-
-  // Write PCM Int16 samples
-  let offset = 44;
-  for (let i = 0; i < samples.length; i++, offset += 2) {
-    let s = Math.max(-1, Math.min(1, samples[i]));
-    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+// Highlights both search terms and clinical FDI dental codes (e.g. 1.6, pieza 36)
+function renderFormattedSegmentText(text: string, search: string, highlightFdi: boolean) {
+  if (search.trim()) {
+    const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+    return parts.map((part, i) =>
+      part.toLowerCase() === search.toLowerCase() ? (
+        <mark key={i} className="bg-amber-200 dark:bg-amber-900/60 text-slate-900 dark:text-slate-100 px-0.5 rounded">
+          {part}
+        </mark>
+      ) : (
+        part
+      )
+    );
   }
 
-  return new Blob([buffer], { type: 'audio/wav' });
+  if (!highlightFdi) return text;
+
+  const fdiPattern =
+    /(\b(?:pieza|piezas|elemento|elementos|diente|dientes|molar|premolar|incisivo|canino|implante|conducto|corona|raíz|raiz)\s+(?:n[°º.]?\s*)?[1-8]\.?[1-8]|(?<!\d)[1-4]\.[1-8](?!\d))/gi;
+  const parts = text.split(fdiPattern);
+  return parts.map((part, idx) => {
+    if (!part) return null;
+    if (fdiPattern.test(part)) {
+      fdiPattern.lastIndex = 0;
+      return (
+        <span
+          key={idx}
+          className="font-semibold text-teal-700 dark:text-teal-300 underline decoration-teal-400/60 decoration-dotted underline-offset-2"
+        >
+          {part}
+        </span>
+      );
+    }
+    fdiPattern.lastIndex = 0;
+    return part;
+  });
 }

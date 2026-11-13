@@ -12,7 +12,10 @@ import {
   Laptop,
   RotateCw,
   Radio,
-  Volume2,
+  Download,
+  Upload,
+  CheckCircle2,
+  CloudDownload,
 } from 'lucide-react';
 import { detectHardwareCapabilities, HardwareCapabilities } from '../core/transcription/tierDetector';
 import { ModelTier } from '../core/types';
@@ -31,6 +34,14 @@ export const SettingsView: React.FC = () => {
     clearAllData,
     openConfirm,
     showToast,
+    modelCacheStatuses,
+    downloadingModelTier,
+    modelDownloadProgress,
+    downloadModelForOffline,
+    exportLocalBackup,
+    importLocalBackup,
+    exportGlossaryBackup,
+    importGlossaryBackup,
   } = useAppStore();
 
   const [hardware, setHardware] = useState<HardwareCapabilities | null>(null);
@@ -38,7 +49,6 @@ export const SettingsView: React.FC = () => {
   const [newCorrect, setNewCorrect] = useState('');
   const [isAddingGlossary, setIsAddingGlossary] = useState(false);
 
-  // Audio Device Enumeration & Mic Level Test
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const [isTestingMic, setIsTestingMic] = useState(false);
   const [testVuLevel, setTestVuLevel] = useState(0);
@@ -46,6 +56,8 @@ export const SettingsView: React.FC = () => {
   const testStreamRef = useRef<MediaStream | null>(null);
   const testContextRef = useRef<AudioContext | null>(null);
   const testAnimFrameRef = useRef<number | null>(null);
+  const backupInputRef = useRef<HTMLInputElement | null>(null);
+  const glossaryInputRef = useRef<HTMLInputElement | null>(null);
 
   const loadAudioDevices = async () => {
     if (typeof navigator !== 'undefined' && navigator.mediaDevices?.enumerateDevices) {
@@ -76,7 +88,6 @@ export const SettingsView: React.FC = () => {
 
   const handleRefreshDevices = async () => {
     try {
-      // Trigger a brief permission request to expose device labels if browser has them hidden
       const tempStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       tempStream.getTracks().forEach((t) => t.stop());
     } catch {
@@ -145,7 +156,10 @@ export const SettingsView: React.FC = () => {
       }
 
       testStreamRef.current = stream;
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const audioCtx = new AudioCtx();
       testContextRef.current = audioCtx;
 
       const source = audioCtx.createMediaStreamSource(stream);
@@ -189,6 +203,63 @@ export const SettingsView: React.FC = () => {
     }
   };
 
+  const triggerDownload = (filename: string, content: string) => {
+    const blob = new Blob([content], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportBackup = async () => {
+    try {
+      const json = await exportLocalBackup();
+      const dateTag = new Date().toISOString().slice(0, 10);
+      triggerDownload(`escriba_respaldo_${dateTag}.json`, json);
+      showToast('Respaldo local exportado', 'success');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al exportar respaldo';
+      showToast(msg, 'warning');
+    }
+  };
+
+  const handleImportBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      await importLocalBackup(text);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al importar respaldo';
+      showToast(msg, 'warning');
+    } finally {
+      e.target.value = '';
+    }
+  };
+
+  const handleExportGlossary = () => {
+    const json = exportGlossaryBackup();
+    const dateTag = new Date().toISOString().slice(0, 10);
+    triggerDownload(`escriba_glosario_${dateTag}.json`, json);
+    showToast('Glosario dental exportado', 'success');
+  };
+
+  const handleImportGlossary = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      await importGlossaryBackup(text);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al importar glosario';
+      showToast(msg, 'warning');
+    } finally {
+      e.target.value = '';
+    }
+  };
+
   const usedMb = Math.round(storageUsage.usedBytes / (1024 * 1024));
   const totalMb = Math.round(storageUsage.quotaBytes / (1024 * 1024));
 
@@ -199,11 +270,11 @@ export const SettingsView: React.FC = () => {
           Ajustes del sistema
         </h1>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          Configuración local del motor de transcripción, vocabulario odontológico y almacenamiento.
+          Configuración local del motor de transcripción, disponibilidad sin internet, glosario odontológico y respaldos.
         </p>
       </div>
 
-      {/* Section 1: Transcription Model Tier */}
+      {/* Section 1: Transcription Model Tier & Offline Readiness */}
       <section className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 p-6 shadow-xs space-y-5">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-teal-50 dark:bg-teal-950/60 flex items-center justify-center text-teal-600 dark:text-teal-400">
@@ -214,12 +285,11 @@ export const SettingsView: React.FC = () => {
               Nivel del modelo de transcripción (Whisper)
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Selecciona el tamaño del modelo según la capacidad de tu teléfono o computadora.
+              Selecciona el modelo y verifica si sus pesos ya están descargados para trabajar sin internet.
             </p>
           </div>
         </div>
 
-        {/* Hardware Detection Badge */}
         {hardware && (
           <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-xs text-slate-600 dark:text-slate-300 space-y-1">
             <div className="font-semibold text-slate-800 dark:text-slate-200">
@@ -259,26 +329,66 @@ export const SettingsView: React.FC = () => {
               tier.id === 'balanced'
                 ? currentTier === 'balanced' || currentTier === 'auto'
                 : currentTier === 'max';
+            const cacheInfo = modelCacheStatuses[tier.id];
+            const isDownloadingThis = downloadingModelTier === tier.id;
+
             return (
-              <button
+              <div
                 key={tier.id}
-                onClick={() => handleTierChange(tier.id)}
-                className={`p-4 rounded-2xl text-left border transition-all ${
+                className={`p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 ${
                   isSelected
                     ? 'border-teal-600 bg-teal-50/50 dark:bg-teal-950/30 ring-1 ring-teal-600'
-                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                    : 'border-slate-200 dark:border-slate-800'
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
-                    {tier.label}
-                  </span>
-                  {isSelected && <Check className="w-4 h-4 text-teal-600" />}
+                <button
+                  type="button"
+                  onClick={() => handleTierChange(tier.id)}
+                  className="text-left space-y-1 w-full"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                      {tier.label}
+                    </span>
+                    {isSelected && <Check className="w-4 h-4 text-teal-600 shrink-0" />}
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    {tier.desc}
+                  </p>
+                </button>
+
+                <div className="pt-2 border-t border-slate-200/70 dark:border-slate-800/80 flex items-center justify-between gap-2">
+                  {cacheInfo?.isCached ? (
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-teal-700 dark:text-teal-400">
+                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                      <span>Listo sin internet</span>
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Descarga inicial pendiente
+                    </span>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => downloadModelForOffline(tier.id)}
+                    disabled={Boolean(downloadingModelTier)}
+                    className="px-3 py-1.5 rounded-xl text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 disabled:opacity-50 transition-colors inline-flex items-center gap-1.5 whitespace-nowrap min-h-[36px]"
+                  >
+                    {isDownloadingThis ? (
+                      <>
+                        <RotateCw className="w-3.5 h-3.5 animate-spin text-teal-600" />
+                        <span>{modelDownloadProgress}%</span>
+                      </>
+                    ) : (
+                      <>
+                        <CloudDownload className="w-3.5 h-3.5 text-teal-600" />
+                        <span>{cacheInfo?.isCached ? 'Verificar caché' : 'Descargar offline'}</span>
+                      </>
+                    )}
+                  </button>
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                  {tier.desc}
-                </p>
-              </button>
+              </div>
             );
           })}
         </div>
@@ -301,15 +411,14 @@ export const SettingsView: React.FC = () => {
         </div>
 
         <div className="space-y-4 pt-1 divide-y divide-slate-100 dark:divide-slate-800">
-          {/* Audio Input Device Selector */}
           <div className="pt-2 space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
                 <div className="text-xs font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                   <span>Dispositivo de micrófono de entrada</span>
                   {settings?.selectedAudioDeviceId && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-teal-100 dark:bg-teal-900/50 text-teal-800 dark:text-teal-200 font-medium">
-                      Personalizado
+                    <span className="text-[10px] text-teal-700 dark:text-teal-300 font-medium">
+                      · Personalizado
                     </span>
                   )}
                 </div>
@@ -318,12 +427,10 @@ export const SettingsView: React.FC = () => {
                 </p>
               </div>
 
-              {/* Refresh devices button */}
               <button
                 type="button"
                 onClick={handleRefreshDevices}
-                className="self-start sm:self-auto px-2.5 py-1 text-[11px] font-medium rounded-lg text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center gap-1.5 transition-colors"
-                title="Actualizar lista de micrófonos conectados"
+                className="self-start sm:self-auto px-3 py-1.5 text-[11px] font-medium rounded-xl text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center gap-1.5 transition-colors min-h-[36px]"
               >
                 <RotateCw className="w-3 h-3 text-slate-500" />
                 <span>Actualizar dispositivos</span>
@@ -335,7 +442,7 @@ export const SettingsView: React.FC = () => {
                 <select
                   value={settings?.selectedAudioDeviceId || ''}
                   onChange={(e) => updateSettings({ selectedAudioDeviceId: e.target.value || undefined })}
-                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-teal-500 font-medium"
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-teal-500 font-medium min-h-[40px]"
                 >
                   <option value="">Predeterminado del sistema / navegador</option>
                   {audioDevices.map((dev, idx) => (
@@ -346,12 +453,11 @@ export const SettingsView: React.FC = () => {
                 </select>
               </div>
 
-              {/* Quick mic test button & vu meter */}
               <div>
                 <button
                   type="button"
                   onClick={toggleMicTest}
-                  className={`w-full px-3 py-2 text-xs font-semibold rounded-xl border transition-colors flex items-center justify-center gap-2 ${
+                  className={`w-full px-3 py-2 text-xs font-semibold rounded-xl border transition-colors flex items-center justify-center gap-2 min-h-[40px] ${
                     isTestingMic
                       ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300'
                       : 'bg-teal-50/70 dark:bg-teal-950/40 border-teal-200 dark:border-teal-800/80 text-teal-800 dark:text-teal-200 hover:bg-teal-100 dark:hover:bg-teal-900/50'
@@ -363,7 +469,6 @@ export const SettingsView: React.FC = () => {
               </div>
             </div>
 
-            {/* Live VU meter when testing */}
             {isTestingMic && (
               <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-1.5">
                 <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-300">
@@ -401,7 +506,7 @@ export const SettingsView: React.FC = () => {
                 Supresión de ruido por hardware del navegador
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 max-w-lg leading-relaxed">
-                Desactivada por defecto. En odontología se recomienda desactivada para evitar que los algoritmos de cancelación corten frecuencias de consonantes o voces suaves.
+                Desactivada por defecto para evitar que los algoritmos de cancelación corten consonantes o voces suaves en el gabinete.
               </p>
             </div>
             <button
@@ -409,6 +514,7 @@ export const SettingsView: React.FC = () => {
               className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${
                 settings?.noiseSuppression ? 'bg-teal-600' : 'bg-slate-300 dark:bg-slate-700'
               }`}
+              aria-label="Alternar supresión de ruido"
             >
               <div
                 className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
@@ -433,6 +539,7 @@ export const SettingsView: React.FC = () => {
               className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${
                 settings?.autoTranscribeOnStop ? 'bg-teal-600' : 'bg-slate-300 dark:bg-slate-700'
               }`}
+              aria-label="Alternar transcripción automática"
             >
               <div
                 className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
@@ -445,16 +552,11 @@ export const SettingsView: React.FC = () => {
           {/* Progressive Background Transcription Toggle */}
           <div className="flex items-center justify-between gap-4 pt-4">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
-                  Transcripción progresiva en segundo plano
-                </span>
-                <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 rounded-md">
-                  Recomendado
-                </span>
+              <div className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                Transcripción progresiva en segundo plano · Recomendado
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 max-w-lg leading-relaxed">
-                Transcribe los bloques de audio cada 30 segundos mientras la consulta continúa. Al finalizar la grabación, el 95% a 100% del texto ya está listo de inmediato sin tiempos de espera.
+                Transcribe bloques cada 30 segundos mientras la consulta continúa. Al finalizar, casi todo el texto ya está listo de inmediato.
               </p>
             </div>
             <button
@@ -462,6 +564,7 @@ export const SettingsView: React.FC = () => {
               className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${
                 (settings?.progressiveTranscription ?? true) ? 'bg-teal-600' : 'bg-slate-300 dark:bg-slate-700'
               }`}
+              aria-label="Alternar transcripción progresiva"
             >
               <div
                 className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
@@ -478,7 +581,7 @@ export const SettingsView: React.FC = () => {
                 Recordatorio de consentimiento informado
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                Muestra la confirmación ética/legal de consentimiento antes de cada nueva consulta.
+                Muestra la confirmación de consentimiento antes de cada nueva consulta.
               </p>
             </div>
             <button
@@ -486,6 +589,7 @@ export const SettingsView: React.FC = () => {
               className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors shrink-0 ${
                 settings?.requireConsent ? 'bg-teal-600' : 'bg-slate-300 dark:bg-slate-700'
               }`}
+              aria-label="Alternar recordatorio de consentimiento"
             >
               <div
                 className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
@@ -497,9 +601,9 @@ export const SettingsView: React.FC = () => {
         </div>
       </section>
 
-      {/* Section 3: Dental Glossary */}
+      {/* Section 3: Dental Glossary + Share/Migrate */}
       <section className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 p-6 shadow-xs space-y-5">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-teal-50 dark:bg-teal-950/60 flex items-center justify-center text-teal-600 dark:text-teal-400">
               <BookOpen className="w-5 h-5" />
@@ -509,21 +613,45 @@ export const SettingsView: React.FC = () => {
                 Glosario odontológico post-proceso
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Corrige automáticamente palabras que Whisper suele interpretar mal.
+                Corrige automáticamente palabras técnicas y compártelo entre consultorios.
               </p>
             </div>
           </div>
 
-          <button
-            onClick={() => setIsAddingGlossary(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-xl text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950 hover:bg-teal-100 dark:hover:bg-teal-900/60 transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Agregar término</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="file"
+              ref={glossaryInputRef}
+              onChange={handleImportGlossary}
+              accept=".json,application/json"
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => glossaryInputRef.current?.click()}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-xl text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors min-h-[36px]"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              <span>Importar</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleExportGlossary}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-xl text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors min-h-[36px]"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Exportar</span>
+            </button>
+            <button
+              onClick={() => setIsAddingGlossary(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950 hover:bg-teal-100 dark:hover:bg-teal-900/60 transition-colors min-h-[36px]"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Agregar término</span>
+            </button>
+          </div>
         </div>
 
-        {/* Add Term Form */}
         {isAddingGlossary && (
           <form onSubmit={handleAddGlossarySubmit} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -572,7 +700,6 @@ export const SettingsView: React.FC = () => {
           </form>
         )}
 
-        {/* Glossary Table */}
         <div className="max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
           {glossary.map((entry) => (
             <div key={entry.id} className="flex items-center justify-between p-3 text-xs hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
@@ -583,7 +710,7 @@ export const SettingsView: React.FC = () => {
               </div>
               <button
                 onClick={() => removeGlossaryEntry(entry.id)}
-                className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
+                className="p-2 text-slate-400 hover:text-rose-600 transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center"
                 title="Eliminar término"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -600,7 +727,7 @@ export const SettingsView: React.FC = () => {
             Aspecto visual
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            El modo claro utiliza una paleta cálida antifatiga visual (lino y porcelana suave), eliminando el blanco deslumbrante bajo la luz del consultorio.
+            El modo claro utiliza una paleta cálida antifatiga visual (lino y porcelana suave) bajo la luz del consultorio.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -614,8 +741,8 @@ export const SettingsView: React.FC = () => {
             return (
               <button
                 key={item.id}
-                onClick={() => updateSettings({ theme: item.id as any })}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl text-xs font-semibold border transition-all ${
+                onClick={() => updateSettings({ theme: item.id as 'light' | 'dark' | 'system' })}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl text-xs font-semibold border transition-all min-h-[44px] ${
                   isSelected
                     ? 'border-teal-600 bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-200 shadow-xs'
                     : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -629,7 +756,7 @@ export const SettingsView: React.FC = () => {
         </div>
       </section>
 
-      {/* Section 5: Local Storage & Maintenance */}
+      {/* Section 5: Local Storage, Backups & Maintenance */}
       <section className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 p-6 shadow-xs space-y-5">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-teal-50 dark:bg-teal-950/60 flex items-center justify-center text-teal-600 dark:text-teal-400">
@@ -637,10 +764,10 @@ export const SettingsView: React.FC = () => {
           </div>
           <div>
             <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-              Almacenamiento e higiene de datos
+              Respaldos y mantenimiento local
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Espacio utilizado por audios y textos en este navegador.
+              Exporta o restaura tus consultas, fichas clínicas y glosario antes de cambiar de dispositivo o limpiar el navegador.
             </p>
           </div>
         </div>
@@ -654,7 +781,36 @@ export const SettingsView: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
+        {/* Backup Import / Export */}
+        <div className="flex flex-wrap items-center gap-3">
+          <input
+            type="file"
+            ref={backupInputRef}
+            onChange={handleImportBackup}
+            accept=".json,application/json"
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={handleExportBackup}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-teal-800 dark:text-teal-200 bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800/80 hover:bg-teal-100 dark:hover:bg-teal-900/40 transition-colors min-h-[44px]"
+          >
+            <Download className="w-4 h-4 text-teal-600" />
+            <span>Exportar respaldo completo (.json)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => backupInputRef.current?.click()}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors min-h-[44px]"
+          >
+            <Upload className="w-4 h-4 text-slate-500" />
+            <span>Restaurar respaldo (.json)</span>
+          </button>
+        </div>
+
+        {/* Cleanup Actions */}
+        <div className="flex flex-col sm:flex-row items-center gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
           <button
             onClick={() => {
               openConfirm({
@@ -666,7 +822,7 @@ export const SettingsView: React.FC = () => {
                 onConfirm: () => clearTranscribedAudioAll(),
               });
             }}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors min-h-[44px]"
           >
             Borrar audio de consultas ya transcritas
           </button>
@@ -675,14 +831,14 @@ export const SettingsView: React.FC = () => {
             onClick={() => {
               openConfirm({
                 title: '¿Borrar TODOS los datos locales?',
-                description: 'Esta acción eliminará de forma irreversible todas las grabaciones, transcripciones, glosarios y ajustes almacenados en este navegador. Se recomienda exportar tus consultas antes de proceder.',
+                description: 'Esta acción eliminará de forma irreversible todas las grabaciones, transcripciones, glosarios y ajustes almacenados en este navegador. Se recomienda exportar un respaldo antes de proceder.',
                 confirmText: 'Borrar todo',
                 cancelText: 'Cancelar',
                 isDestructive: true,
                 onConfirm: () => clearAllData(),
               });
             }}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-900/60 transition-colors"
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-900/60 transition-colors min-h-[44px]"
           >
             Borrar todos los datos locales
           </button>

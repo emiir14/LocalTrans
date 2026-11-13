@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   RotateCw,
   Trash2,
+  Zap,
 } from 'lucide-react';
 import { formatTimeDisplay } from '../core/export/formatter';
 import { Session } from '../core/types';
@@ -116,7 +117,7 @@ export const HomeView: React.FC = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           <input
             type="file"
             ref={fileInputRef}
@@ -133,6 +134,15 @@ export const HomeView: React.FC = () => {
           </button>
 
           <button
+            onClick={() => startRecording('', true, { isQuickDictation: true })}
+            className="flex items-center gap-2 px-4 py-3 rounded-2xl text-xs font-semibold text-teal-800 dark:text-teal-200 bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800/80 hover:bg-teal-100 dark:hover:bg-teal-900/40 transition-colors whitespace-nowrap min-h-[48px]"
+            title="Graba un dictado breve post-atención sin pasos previos y transcribe al detener"
+          >
+            <Zap className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+            <span>Dictado rápido</span>
+          </button>
+
+          <button
             onClick={() => {
               if (settings?.requireConsent) {
                 setShowModal(true);
@@ -142,7 +152,6 @@ export const HomeView: React.FC = () => {
             }}
             className="group relative flex items-center gap-2.5 px-6 py-3 rounded-2xl text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 active:scale-[0.98] transition-all shadow-md shadow-teal-600/20 whitespace-nowrap min-h-[48px]"
           >
-            <span className="w-2.5 h-2.5 rounded-full bg-white group-hover:scale-125 transition-transform" />
             <Mic className="w-4 h-4" />
             <span>Grabar consulta</span>
           </button>

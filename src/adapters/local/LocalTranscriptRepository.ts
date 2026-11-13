@@ -26,6 +26,17 @@ export class LocalTranscriptRepository implements ITranscriptRepository {
     });
   }
 
+  public async updateSegmentSpeaker(id: string, speaker: string | undefined): Promise<void> {
+    await db.transcriptSegments.update(id, {
+      speaker,
+      updatedAt: Date.now(),
+    });
+  }
+
+  public async deleteSegment(id: string): Promise<void> {
+    await db.transcriptSegments.delete(id);
+  }
+
   public async deleteBySessionId(sessionId: string): Promise<void> {
     await db.transcriptSegments.where('sessionId').equals(sessionId).delete();
   }

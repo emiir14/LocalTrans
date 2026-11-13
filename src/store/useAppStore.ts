@@ -8,11 +8,28 @@ import { LocalSessionRepository } from '../adapters/local/LocalSessionRepository
 import { LocalSettingsRepository } from '../adapters/local/LocalSettingsRepository';
 import { LocalTranscriptRepository } from '../adapters/local/LocalTranscriptRepository';
 import { RecordingController, VuData } from '../core/audio/recordingController';
-import { getSharedWhisperEngine } from '../core/transcription/engine';
+import {
+  exportFullBackup,
+  exportGlossaryJson,
+  importGlossaryJson,
+  restoreFullBackup,
+} from '../core/export/backup';
+import { getSharedWhisperEngine, ProgressCallbackData } from '../core/transcription/engine';
+import { checkModelCacheStatus, ModelCacheStatus } from '../core/transcription/modelCache';
 import { PipelineProgress, TranscriptionPipeline } from '../core/transcription/pipeline';
 import { CLINICAL_WHISPER_INITIAL_PROMPT } from '../core/transcription/prompts';
 import { ClinicalAudioSegmenter } from '../core/transcription/vad';
-import { AppSettings, AudioChunk, GlossaryEntry, Profile, Session, TranscriptSegment, Workspace } from '../core/types';
+import {
+  AppSettings,
+  AudioChunk,
+  ClinicalNote,
+  GlossaryEntry,
+  ModelTier,
+  Profile,
+  Session,
+  TranscriptSegment,
+  Workspace,
+} from '../core/types';
 import { wakeLockManager } from '../core/utils/wakeLockManager';
 
 // Global singletons for repositories
@@ -31,14 +48,46 @@ class BackgroundChunkTranscriber {
   private isProcessing = false;
   private segmenter = new ClinicalAudioSegmenter();
   private lastTranscribedText = '';
+  private lastSessionId = '';
+  private idleWaiters: Array<() => void> = [];
 
   public enqueue(chunk: AudioChunk, sessionId: string, workspaceId: string) {
+    if (this.lastSessionId !== sessionId) {
+      this.lastSessionId = sessionId;
+      this.lastTranscribedText = '';
+    }
     this.queue.push({ chunk, sessionId, workspaceId });
     this.processQueue();
   }
 
+  public resetSessionContext() {
+    this.lastTranscribedText = '';
+    this.lastSessionId = '';
+  }
+
+  public clearQueueForSession(sessionId: string) {
+    this.queue = this.queue.filter((item) => item.sessionId !== sessionId);
+  }
+
+  public async waitForIdle(): Promise<void> {
+    if (!this.isProcessing && this.queue.length === 0) return;
+    return new Promise((resolve) => {
+      this.idleWaiters.push(resolve);
+    });
+  }
+
+  private notifyIdleIfDone() {
+    if (!this.isProcessing && this.queue.length === 0) {
+      const waiters = this.idleWaiters.splice(0, this.idleWaiters.length);
+      waiters.forEach((w) => w());
+    }
+  }
+
   private async processQueue() {
-    if (this.isProcessing || this.queue.length === 0) return;
+    if (this.isProcessing || this.queue.length === 0) {
+      this.notifyIdleIfDone();
+      return;
+    }
     this.isProcessing = true;
     await wakeLockManager.acquire('bg_transcription');
 
@@ -53,7 +102,6 @@ class BackgroundChunkTranscriber {
         await engine.load(currentSettings?.modelTier || 'balanced');
       }
 
-      // Convert chunk 16kHz Int16 to Float32
       const int16 = new Int16Array(chunk.pcmData);
       const float32 = new Float32Array(int16.length);
       for (let i = 0; i < int16.length; i++) {
@@ -98,7 +146,6 @@ class BackgroundChunkTranscriber {
           await transcriptRepo.addSegment(segment);
           this.lastTranscribedText = processedText;
 
-          // If user is viewing this session, update store in real-time
           if (useAppStore.getState().currentSessionId === sessionId) {
             useAppStore.setState((state) => ({
               activeTranscript: [...state.activeTranscript, segment].sort((a, b) => a.start - b.start),
@@ -114,6 +161,7 @@ class BackgroundChunkTranscriber {
         this.processQueue();
       } else {
         await wakeLockManager.release('bg_transcription');
+        this.notifyIdleIfDone();
       }
     }
   }
@@ -138,18 +186,24 @@ interface AppState {
   recordingController: RecordingController | null;
   isRecording: boolean;
   isPaused: boolean;
+  isQuickDictationMode: boolean;
+  appendingToSessionId: string | null;
   recordingDurationSec: number;
   dayPatientIndex: number;
   vu: VuData;
   lastSavedAt: number | null;
   silenceWarning: boolean;
+  trackDisconnectedWarning: string | null;
   wakeLockActive: boolean;
 
-  // Transcription State
+  // Transcription & Model Cache State
   transcriptionPipeline: TranscriptionPipeline | null;
   transcribingSessionId: string | null;
   transcriptionProgress: PipelineProgress | null;
   transcriptionFallbackNotice: string | null;
+  modelCacheStatuses: Record<'balanced' | 'max', ModelCacheStatus | null>;
+  downloadingModelTier: 'balanced' | 'max' | null;
+  modelDownloadProgress: number;
 
   // Recovery & Modals
   unclosedSession: Session | null;
@@ -164,7 +218,12 @@ interface AppState {
   setView: (view: AppView, sessionId?: string) => void;
   loadSessions: () => Promise<void>;
   loadSessionDetail: (sessionId: string) => Promise<void>;
-  startRecording: (reference?: string, consentGiven?: boolean) => Promise<void>;
+  startRecording: (
+    reference?: string,
+    consentGiven?: boolean,
+    options?: { isQuickDictation?: boolean }
+  ) => Promise<void>;
+  appendRecordingToSession: (sessionId: string) => Promise<void>;
   pauseRecording: () => void;
   resumeRecording: () => void;
   nextPatient: () => Promise<void>;
@@ -172,9 +231,18 @@ interface AppState {
   discardRecording: () => Promise<void>;
   recoverRecording: (session: Session) => Promise<void>;
   dismissRecovery: () => Promise<void>;
-  startTranscription: (sessionId: string) => Promise<void>;
+  startTranscription: (
+    sessionId: string,
+    options?: { forceRetranscribe?: boolean }
+  ) => Promise<void>;
   cancelTranscription: () => void;
+  updateSessionMeta: (
+    sessionId: string,
+    patch: { title?: string; reference?: string }
+  ) => Promise<void>;
+  saveClinicalNote: (sessionId: string, note: ClinicalNote) => Promise<void>;
   updateSegmentText: (segmentId: string, newText: string) => Promise<void>;
+  updateSegmentSpeaker: (segmentId: string, speaker: string | undefined) => Promise<void>;
   deleteSession: (sessionId: string) => Promise<void>;
   deleteAudioForSession: (sessionId: string) => Promise<void>;
   clearTranscribedAudioAll: () => Promise<void>;
@@ -183,6 +251,12 @@ interface AppState {
   addGlossaryEntry: (incorrect: string, correct: string) => Promise<void>;
   removeGlossaryEntry: (id: string) => Promise<void>;
   importAudioFile: (file: File, reference?: string) => Promise<void>;
+  refreshModelCacheStatuses: () => Promise<void>;
+  downloadModelForOffline: (tier: 'balanced' | 'max') => Promise<void>;
+  exportLocalBackup: () => Promise<string>;
+  importLocalBackup: (jsonText: string) => Promise<void>;
+  exportGlossaryBackup: () => string;
+  importGlossaryBackup: (jsonText: string) => Promise<void>;
   showToast: (text: string, type?: 'info' | 'success' | 'warning') => void;
   closeOnboarding: () => void;
 
@@ -215,17 +289,23 @@ export const useAppStore = create<AppState>((set, get) => ({
   recordingController: null,
   isRecording: false,
   isPaused: false,
+  isQuickDictationMode: false,
+  appendingToSessionId: null,
   dayPatientIndex: 1,
   recordingDurationSec: 0,
   vu: { rms: 0, peak: 0 },
   lastSavedAt: null,
   silenceWarning: false,
+  trackDisconnectedWarning: null,
   wakeLockActive: false,
 
   transcriptionPipeline: null,
   transcribingSessionId: null,
   transcriptionProgress: null,
   transcriptionFallbackNotice: null,
+  modelCacheStatuses: { balanced: null, max: null },
+  downloadingModelTier: null,
+  modelDownloadProgress: 0,
 
   unclosedSession: null,
   showOnboarding: false,
@@ -242,14 +322,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     const unclosed = await sessionRepo.findUnclosedRecording(ws.id);
     const storageEst = await audioStore.getStorageEstimate();
 
-    // Check first time onboarding
     const seenOnboarding = localStorage.getItem('escriba_onboarding_done');
     const showOnboarding = !seenOnboarding;
 
-    // Apply theme
     applyThemeClass(sets.theme);
 
-    // Recover any session that was interrupted during transcription (e.g. browser reload/crash)
     const allUserSessions = await sessionRepo.getAll(ws.id);
     const interruptedSession = allUserSessions.find((s) => s.status === 'transcribing');
     if (interruptedSession) {
@@ -267,13 +344,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
 
     await get().loadSessions();
+    await get().refreshModelCacheStatuses();
 
-    // Sync global wakeLock state across recording, downloading, and transcription
     wakeLockManager.subscribe((active) => {
       set({ wakeLockActive: active });
     });
 
-    // Pre-warm the shared Whisper engine in background after initial render
     if (typeof window !== 'undefined') {
       setTimeout(() => {
         getSharedWhisperEngine().load(sets.modelTier || 'balanced').catch(() => {});
@@ -291,6 +367,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
     if (view === 'home') {
       get().loadSessions();
+    }
+    if (view === 'settings') {
+      get().refreshModelCacheStatuses();
     }
   },
 
@@ -313,16 +392,25 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
   },
 
-  startRecording: async (reference = '', consentGiven = true) => {
+  startRecording: async (reference = '', consentGiven = true, options = {}) => {
     const ws = get().workspace;
     if (!ws) return;
 
+    backgroundChunkTranscriber.resetSessionContext();
+    const isQuick = Boolean(options.isQuickDictation);
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
     const sessionId = `session_${Date.now()}`;
+
     const newSession: Session = {
       id: sessionId,
       workspaceId: ws.id,
-      title: reference.trim() ? `Consulta ${reference.trim()}` : `Consulta del ${new Date().toLocaleDateString('es-AR')}`,
-      reference: reference.trim(),
+      title: isQuick
+        ? `Dictado rápido (${timeStr} hs)`
+        : reference.trim()
+        ? `Consulta ${reference.trim()}`
+        : `Consulta del ${now.toLocaleDateString('es-AR')}`,
+      reference: reference.trim() || (isQuick ? `Dictado rápido ${timeStr}` : ''),
       status: 'recording',
       durationSec: 0,
       consentGiven,
@@ -344,6 +432,10 @@ export const useAppStore = create<AppState>((set, get) => ({
         }
       },
       onSilenceWarning: (silent) => set({ silenceWarning: silent }),
+      onTrackEnded: (reason) => {
+        set({ trackDisconnectedWarning: reason });
+        get().showToast(reason, 'warning');
+      },
       onWakeLockChange: (active) => set({ wakeLockActive: active }),
       onError: (err) => {
         get().showToast(err.message || 'Error en la grabación', 'warning');
@@ -361,6 +453,8 @@ export const useAppStore = create<AppState>((set, get) => ({
         recordingController: controller,
         isRecording: true,
         isPaused: false,
+        isQuickDictationMode: isQuick,
+        appendingToSessionId: null,
         dayPatientIndex: 1,
         recordingDurationSec: 0,
         currentView: 'recording',
@@ -368,11 +462,91 @@ export const useAppStore = create<AppState>((set, get) => ({
         currentSessionId: sessionId,
         lastSavedAt: Date.now(),
         silenceWarning: false,
+        trackDisconnectedWarning: null,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '';
       console.error('Failed to start recording:', err);
       get().showToast(
-        err.message || 'No se pudo acceder al micrófono. Por favor verifica los permisos en tu navegador.',
+        msg || 'No se pudo acceder al micrófono. Por favor verifica los permisos en tu navegador.',
+        'warning'
+      );
+    }
+  },
+
+  appendRecordingToSession: async (sessionId: string) => {
+    const ws = get().workspace;
+    if (!ws) return;
+
+    const existingSession = await sessionRepo.getById(sessionId);
+    if (!existingSession || existingSession.audioDeleted) {
+      get().showToast('No es posible anexar audio a esta consulta.', 'warning');
+      return;
+    }
+
+    const existingChunks = await audioStore.getChunks(sessionId);
+    const initialChunkIndex =
+      existingChunks.length > 0
+        ? Math.max(...existingChunks.map((c) => c.chunkIndex)) + 1
+        : 0;
+    const initialOffsetSec = existingChunks.reduce(
+      (sum, c) => sum + Math.max(0, c.endTime - c.startTime),
+      0
+    );
+
+    backgroundChunkTranscriber.resetSessionContext();
+    const controller = new RecordingController(sessionRepo, audioStore);
+
+    controller.setCallbacks({
+      onTimeUpdate: (sec) => set({ recordingDurationSec: sec }),
+      onVuUpdate: (vu) => set({ vu }),
+      onChunkSaved: (lastSavedAt, _totalChunks, chunk) => {
+        set({ lastSavedAt });
+        const settings = get().settings;
+        if ((settings?.progressiveTranscription ?? true) && chunk) {
+          backgroundChunkTranscriber.enqueue(chunk, chunk.sessionId, ws.id);
+        }
+      },
+      onSilenceWarning: (silent) => set({ silenceWarning: silent }),
+      onTrackEnded: (reason) => {
+        set({ trackDisconnectedWarning: reason });
+        get().showToast(reason, 'warning');
+      },
+      onWakeLockChange: (active) => set({ wakeLockActive: active }),
+      onError: (err) => {
+        get().showToast(err.message || 'Error en la grabación', 'warning');
+      },
+    });
+
+    const settings = get().settings;
+    try {
+      await controller.startRecording(existingSession, {
+        noiseSuppression: settings?.noiseSuppression ?? false,
+        audioDeviceId: settings?.selectedAudioDeviceId,
+        initialChunkIndex,
+        initialOffsetSec,
+        skipSessionCreate: true,
+      });
+
+      set({
+        recordingController: controller,
+        isRecording: true,
+        isPaused: false,
+        isQuickDictationMode: false,
+        appendingToSessionId: sessionId,
+        dayPatientIndex: 1,
+        recordingDurationSec: Math.round(initialOffsetSec),
+        currentView: 'recording',
+        activeSession: existingSession,
+        currentSessionId: sessionId,
+        lastSavedAt: Date.now(),
+        silenceWarning: false,
+        trackDisconnectedWarning: null,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '';
+      get().showToast(
+        msg || 'No se pudo acceder al micrófono para anexar audio.',
         'warning'
       );
     }
@@ -390,7 +564,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const controller = get().recordingController;
     if (controller) {
       controller.resumeRecording();
-      set({ isPaused: false });
+      set({ isPaused: false, trackDisconnectedWarning: null });
     }
   },
 
@@ -399,6 +573,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const ws = get().workspace;
     if (!controller || !ws) return;
 
+    backgroundChunkTranscriber.resetSessionContext();
     const nextIndex = get().dayPatientIndex + 1;
     const now = new Date();
     const timeStr = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
@@ -420,7 +595,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       await controller.switchNextPatient(newSession);
 
-      // Tactile / vibration feedback if supported
       if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
         try {
           navigator.vibrate([60, 40, 60]);
@@ -431,37 +605,45 @@ export const useAppStore = create<AppState>((set, get) => ({
 
       set({
         dayPatientIndex: nextIndex,
+        isPaused: false,
+        isQuickDictationMode: false,
+        appendingToSessionId: null,
         activeSession: newSession,
         currentSessionId: sessionId,
         recordingDurationSec: 0,
         lastSavedAt: Date.now(),
+        silenceWarning: false,
       });
 
-      // Reload sessions list in background
       await get().loadSessions();
-
       get().showToast(`¡Consulta anterior guardada! Iniciando Paciente #${nextIndex}`, 'success');
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al cambiar de paciente';
       console.error('Error switching to next patient:', err);
-      get().showToast(err.message || 'Error al cambiar de paciente', 'warning');
+      get().showToast(msg, 'warning');
     }
   },
 
   stopRecording: async () => {
     const controller = get().recordingController;
+    const wasQuickDictation = get().isQuickDictationMode;
+    const wasAppending = Boolean(get().appendingToSessionId);
+
     if (controller) {
       const finishedSession = await controller.stopRecording();
       set({
         isRecording: false,
         isPaused: false,
+        isQuickDictationMode: false,
+        appendingToSessionId: null,
+        trackDisconnectedWarning: null,
         recordingController: null,
       });
 
       await get().loadSessions();
 
-      // Check auto transcribe option
       const settings = get().settings;
-      if (settings?.autoTranscribeOnStop) {
+      if (settings?.autoTranscribeOnStop || wasQuickDictation || wasAppending) {
         get().setView('detail', finishedSession.id);
         get().startTranscription(finishedSession.id);
       } else {
@@ -472,11 +654,31 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   discardRecording: async () => {
     const controller = get().recordingController;
+    const appendingId = get().appendingToSessionId;
     if (controller) {
+      if (appendingId) {
+        // When discarding an appended recording, finalize existing session safely without deleting original audio
+        await controller.stopRecording();
+        set({
+          isRecording: false,
+          isPaused: false,
+          isQuickDictationMode: false,
+          appendingToSessionId: null,
+          trackDisconnectedWarning: null,
+          recordingController: null,
+        });
+        get().setView('detail', appendingId);
+        get().showToast('Anexo detenido', 'info');
+        return;
+      }
+
       await controller.discardRecording();
       set({
         isRecording: false,
         isPaused: false,
+        isQuickDictationMode: false,
+        appendingToSessionId: null,
+        trackDisconnectedWarning: null,
         recordingController: null,
         activeSession: null,
       });
@@ -486,7 +688,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   recoverRecording: async (session: Session) => {
-    // Treat as normal recorded session with what was saved in IndexedDB
     await sessionRepo.update(session.id, { status: 'recorded' });
     set({ unclosedSession: null });
     get().showToast('Grabación recuperada con éxito', 'success');
@@ -502,9 +703,18 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  startTranscription: async (sessionId: string) => {
+  startTranscription: async (sessionId: string, options = {}) => {
     const ws = get().workspace;
     if (!ws) return;
+
+    // Prevent concurrent pipeline collision if a transcription is already running
+    if (get().transcribingSessionId) {
+      get().showToast('Ya hay una transcripción en curso.', 'info');
+      return;
+    }
+
+    // Drain any queued/in-flight background chunk for this session before starting pipeline
+    backgroundChunkTranscriber.clearQueueForSession(sessionId);
 
     const pipeline = new TranscriptionPipeline(
       sessionRepo,
@@ -524,18 +734,21 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({
       transcriptionPipeline: pipeline,
       transcribingSessionId: sessionId,
+      ...(options.forceRetranscribe ? { activeTranscript: [] } : {}),
       transcriptionProgress: {
         sessionId,
         percent: 0,
         currentSegment: 0,
         totalSegments: 1,
         estimatedRemainingSec: 0,
-        statusText: 'Iniciando pipeline de transcripción...',
+        statusText: 'Sincronizando cola y preparando motor...',
       },
     });
 
     await wakeLockManager.acquire('transcription');
     try {
+      await backgroundChunkTranscriber.waitForIdle();
+
       const segments = await pipeline.run(
         sessionId,
         ws.id,
@@ -543,7 +756,6 @@ export const useAppStore = create<AppState>((set, get) => ({
           set({ transcriptionProgress: prog });
         },
         (newSegment) => {
-          // Stream new segment immediately into UI transcript list
           set((state) => {
             const exists = state.activeTranscript.some((s) => s.id === newSegment.id);
             const updated = exists ? state.activeTranscript : [...state.activeTranscript, newSegment];
@@ -551,7 +763,8 @@ export const useAppStore = create<AppState>((set, get) => ({
               activeTranscript: updated.sort((a, b) => a.start - b.start),
             };
           });
-        }
+        },
+        { forceRetranscribe: options.forceRetranscribe }
       );
 
       set({
@@ -563,17 +776,22 @@ export const useAppStore = create<AppState>((set, get) => ({
 
       await get().loadSessionDetail(sessionId);
       await get().loadSessions();
+      await get().refreshModelCacheStatuses();
       get().showToast('Transcripción completada con éxito', 'success');
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error en la transcripción';
       console.error('Transcription error:', err);
       set({
         transcribingSessionId: null,
         transcriptionProgress: null,
         transcriptionPipeline: null,
       });
-      await sessionRepo.update(sessionId, { status: 'error', error: err.message });
+      if (!msg.includes('cancelada')) {
+        await sessionRepo.update(sessionId, { status: 'error', error: msg });
+      }
       await get().loadSessionDetail(sessionId);
-      get().showToast(err.message || 'Error en la transcripción', 'warning');
+      await get().loadSessions();
+      get().showToast(msg, msg.includes('cancelada') ? 'info' : 'warning');
     } finally {
       await wakeLockManager.release('transcription');
     }
@@ -593,10 +811,38 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
+  updateSessionMeta: async (sessionId: string, patch: { title?: string; reference?: string }) => {
+    await sessionRepo.update(sessionId, patch);
+    const updated = await sessionRepo.getById(sessionId);
+    if (updated && get().activeSession?.id === sessionId) {
+      set({ activeSession: updated });
+    }
+    await get().loadSessions();
+    get().showToast('Datos de la consulta actualizados', 'success');
+  },
+
+  saveClinicalNote: async (sessionId: string, note: ClinicalNote) => {
+    await sessionRepo.update(sessionId, { clinicalNote: note });
+    const updated = await sessionRepo.getById(sessionId);
+    if (updated && get().activeSession?.id === sessionId) {
+      set({ activeSession: updated });
+    }
+    await get().loadSessions();
+    get().showToast('Ficha clínica guardada', 'success');
+  },
+
   updateSegmentText: async (segmentId: string, newText: string) => {
     await transcriptRepo.updateSegment(segmentId, newText);
     const active = get().activeTranscript.map((s) =>
       s.id === segmentId ? { ...s, text: newText, edited: true } : s
+    );
+    set({ activeTranscript: active });
+  },
+
+  updateSegmentSpeaker: async (segmentId: string, speaker: string | undefined) => {
+    await transcriptRepo.updateSegmentSpeaker(segmentId, speaker);
+    const active = get().activeTranscript.map((s) =>
+      s.id === segmentId ? { ...s, speaker } : s
     );
     set({ activeTranscript: active });
   },
@@ -704,10 +950,82 @@ export const useAppStore = create<AppState>((set, get) => ({
       await get().loadSessions();
       get().setView('detail', finished.id);
       get().showToast('Audio importado correctamente', 'success');
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al importar audio';
       console.error('Import error:', err);
-      get().showToast(err.message || 'Error al importar audio', 'warning');
+      get().showToast(msg, 'warning');
     }
+  },
+
+  refreshModelCacheStatuses: async () => {
+    try {
+      const [balanced, max] = await Promise.all([
+        checkModelCacheStatus('balanced'),
+        checkModelCacheStatus('max'),
+      ]);
+      set({
+        modelCacheStatuses: { balanced, max },
+      });
+    } catch {
+      // ignore cache check failure
+    }
+  },
+
+  downloadModelForOffline: async (tier: 'balanced' | 'max') => {
+    if (get().downloadingModelTier) return;
+    set({ downloadingModelTier: tier, modelDownloadProgress: 0 });
+    try {
+      const engine = getSharedWhisperEngine();
+      await engine.load(tier, (p: ProgressCallbackData) => {
+        if (p.status === 'progress' && typeof p.progress === 'number') {
+          set({ modelDownloadProgress: Math.round(p.progress) });
+        }
+      });
+      await get().refreshModelCacheStatuses();
+      get().showToast('Modelo listo y guardado para usar sin internet', 'success');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al descargar modelo';
+      get().showToast(msg, 'warning');
+    } finally {
+      set({ downloadingModelTier: null, modelDownloadProgress: 0 });
+    }
+  },
+
+  exportLocalBackup: async () => {
+    const ws = get().workspace;
+    if (!ws) throw new Error('Espacio de trabajo no inicializado');
+    return await exportFullBackup(ws.id);
+  },
+
+  importLocalBackup: async (jsonText: string) => {
+    const ws = get().workspace;
+    if (!ws) return;
+    const summary = await restoreFullBackup(jsonText, ws.id);
+    const updatedGlossary = await glossaryRepo.getAll(ws.id);
+    set({ glossary: updatedGlossary });
+    await get().loadSessions();
+    get().showToast(
+      `Respaldo importado: ${summary.sessionsRestored} consultas y ${summary.glossaryRestored} términos nuevos`,
+      'success'
+    );
+  },
+
+  exportGlossaryBackup: () => {
+    return exportGlossaryJson(get().glossary);
+  },
+
+  importGlossaryBackup: async (jsonText: string) => {
+    const ws = get().workspace;
+    if (!ws) return;
+    const added = await importGlossaryJson(jsonText, ws.id);
+    const updatedGlossary = await glossaryRepo.getAll(ws.id);
+    set({ glossary: updatedGlossary });
+    get().showToast(
+      added > 0
+        ? `Se agregaron ${added} términos nuevos al glosario`
+        : 'El glosario ya contenía todos esos términos',
+      'success'
+    );
   },
 
   showToast: (text: string, type: 'info' | 'success' | 'warning' = 'info') => {
@@ -739,7 +1057,6 @@ function applyThemeClass(theme: 'light' | 'dark' | 'system') {
   } else if (theme === 'light') {
     root.classList.remove('dark');
   } else {
-    // system
     if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       root.classList.add('dark');
     } else {

@@ -32,6 +32,10 @@ class PcmRecorderProcessor extends AudioWorkletProcessor {
         this.isPaused = false;
       } else if (data.command === 'flush') {
         this.flushChunk();
+        this.port.postMessage({
+          type: 'flush_done',
+          flushId: data.flushId ?? null,
+        });
       }
     };
   }

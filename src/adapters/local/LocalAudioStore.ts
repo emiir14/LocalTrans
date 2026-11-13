@@ -41,6 +41,51 @@ export class LocalAudioStore implements IAudioStore {
     return float32;
   }
 
+  public async createWavBlob(sessionId: string): Promise<{ blob: Blob; durationSec: number }> {
+    const chunks = await this.getChunks(sessionId);
+    if (chunks.length === 0) {
+      return { blob: new Blob([], { type: 'audio/wav' }), durationSec: 0 };
+    }
+
+    const sampleRate = chunks[0].sampleRate || 16000;
+    let totalDataBytes = 0;
+    let totalSamples = 0;
+    const pcmParts: ArrayBuffer[] = [];
+
+    for (const chunk of chunks) {
+      totalDataBytes += chunk.pcmData.byteLength;
+      totalSamples += chunk.samples;
+      pcmParts.push(chunk.pcmData);
+    }
+
+    const header = new ArrayBuffer(44);
+    const view = new DataView(header);
+    const writeString = (offset: number, str: string) => {
+      for (let i = 0; i < str.length; i++) {
+        view.setUint8(offset + i, str.charCodeAt(i));
+      }
+    };
+
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + totalDataBytes, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true); // PCM
+    view.setUint16(22, 1, true); // Mono
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeString(36, 'data');
+    view.setUint32(40, totalDataBytes, true);
+
+    return {
+      blob: new Blob([header, ...pcmParts], { type: 'audio/wav' }),
+      durationSec: totalSamples / sampleRate,
+    };
+  }
+
   public async deleteAudio(sessionId: string): Promise<void> {
     await db.audioChunks.where('sessionId').equals(sessionId).delete();
   }

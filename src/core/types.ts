@@ -25,6 +25,19 @@ export interface Profile {
   updatedAt: number;
 }
 
+export type ClinicalTemplateId = 'general' | 'endodoncia' | 'operatoria' | 'cirugia' | 'periodoncia';
+
+export interface ClinicalNote {
+  templateId: ClinicalTemplateId;
+  detectedTeeth: string[];
+  chiefComplaint: string;
+  findings: string;
+  procedure: string;
+  indications: string;
+  nextVisit: string;
+  updatedAt: number;
+}
+
 export interface Session {
   id: string;
   workspaceId: string;
@@ -35,6 +48,7 @@ export interface Session {
   consentGiven: boolean;
   modelTierUsed?: ModelTier;
   audioDeleted: boolean;
+  clinicalNote?: ClinicalNote;
   error?: string;
   createdAt: number;
   updatedAt: number;
