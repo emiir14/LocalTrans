@@ -237,13 +237,12 @@ pub async fn load_whisper_model(
     let (resolved_tier, model_path) = ensure_model_downloaded(&app, &tier).await?;
 
     // Check if the requested tier is already loaded in memory
-    {
+    let already_loaded = {
         let guard = state.ctx.lock().map_err(|_| "Error de bloqueo de memoria".to_string())?;
-        if let Some((loaded_tier, _)) = guard.as_ref() {
-            if loaded_tier == &resolved_tier {
-                return get_native_capabilities(app, state);
-            }
-        }
+        matches!(guard.as_ref(), Some((loaded_tier, _)) if loaded_tier == &resolved_tier)
+    };
+    if already_loaded {
+        return get_native_capabilities(app, state);
     }
 
     let path_str = model_path.to_string_lossy().to_string();
