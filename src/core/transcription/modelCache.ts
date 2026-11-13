@@ -1,3 +1,4 @@
+import { getTauriBridge } from '../runtime/platform';
 import { ModelTier } from '../types';
 import { TIER_CONFIGS } from './tierDetector';
 
@@ -10,8 +11,8 @@ export interface ModelCacheStatus {
 }
 
 /**
- * Checks browser Cache Storage ('transformers-cache') to determine whether
- * the ONNX weights for a given Whisper model are stored offline locally.
+ * Checks browser Cache Storage ('transformers-cache') or native Tauri GGML models directory
+ * to determine whether the Whisper model weights are stored offline locally.
  */
 export async function checkModelCacheStatus(
   tier: Exclude<ModelTier, 'auto' | 'fast'>
@@ -24,6 +25,27 @@ export async function checkModelCacheStatus(
     cachedFilesCount: 0,
     cachedBytes: 0,
   };
+
+  const tauri = getTauriBridge();
+  if (tauri) {
+    try {
+      const nativeStatus = await tauri.core.invoke<{
+        tier: string;
+        fileName: string;
+        isCached: boolean;
+        fileBytes: number;
+      }>('check_native_model_status', { tier });
+      return {
+        tier,
+        modelId: nativeStatus.fileName,
+        isCached: nativeStatus.isCached,
+        cachedFilesCount: nativeStatus.isCached ? 1 : 0,
+        cachedBytes: nativeStatus.fileBytes || 0,
+      };
+    } catch {
+      return empty;
+    }
+  }
 
   if (typeof caches === 'undefined') {
     return empty;

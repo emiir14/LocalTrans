@@ -160,4 +160,15 @@ export const ExportFormatter = {
 
     return lines.join('\n\n');
   },
+
+  toCleanPlainText(segments: TranscriptSegment[]): string {
+    return segments
+      .map((seg) => {
+        const text = seg.text.trim();
+        if (!text) return '';
+        return seg.speaker ? `${seg.speaker}: ${text}` : text;
+      })
+      .filter(Boolean)
+      .join('\n\n');
+  },
 };

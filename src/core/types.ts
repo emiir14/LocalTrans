@@ -5,6 +5,8 @@
 
 export type ModelTier = 'auto' | 'fast' | 'balanced' | 'max';
 
+export type TranscriptionMode = 'dental' | 'general';
+
 export type SessionStatus = 'recording' | 'recorded' | 'transcribing' | 'completed' | 'error';
 
 export interface Workspace {
@@ -102,6 +104,7 @@ export interface AppSettings {
   requireConsent: boolean;
   autoTranscribeOnStop: boolean;
   progressiveTranscription: boolean; // Transcribes chunks in background during recording for instant results
+  transcriptionMode?: TranscriptionMode; // 'dental' uses dental prompt + glossary; 'general' avoids dental bias
   theme: 'light' | 'dark' | 'system';
   updatedAt: number;
 }

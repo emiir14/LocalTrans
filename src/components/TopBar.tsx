@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mic, Shield, Sliders, Menu, X } from 'lucide-react';
+import { Mic, Shield, Sliders, Download, Menu, X } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { PWAInstallButton } from './PWAInstallButton';
 
@@ -9,6 +9,7 @@ export const TopBar: React.FC = () => {
 
   const navItems = [
     { id: 'home', label: 'Grabaciones', icon: Mic },
+    { id: 'downloads', label: 'Descargas', icon: Download },
     { id: 'settings', label: 'Ajustes', icon: Sliders },
     { id: 'privacy', label: 'Privacidad', icon: Shield },
   ] as const;

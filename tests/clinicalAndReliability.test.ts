@@ -132,4 +132,46 @@ describe('Clinical FDI Parser & Structured Note Builder', () => {
     expect(parsed.schema).toBe('escriba_glossary_v1');
     expect(parsed.entries).toEqual([{ incorrect: 'conducto metria', correct: 'conductometría' }]);
   });
+
+  it('builds dental vs general rolling prompts cleanly and formats clean plain text without timestamps', async () => {
+    const { buildSegmentPrompt } = await import('../src/core/transcription/prompts');
+
+    const generalPrompt = buildSegmentPrompt('general', 'Che boludo, vamos a buscar el cofre.');
+    expect(generalPrompt).toContain('español rioplatense');
+    expect(generalPrompt).toContain('vamos a buscar el cofre.');
+    expect(generalPrompt.toLowerCase()).not.toContain('conductometría');
+
+    const dentalPrompt = buildSegmentPrompt('dental', 'Pieza 3.6 con caries profunda.');
+    expect(dentalPrompt).toContain('conductometría');
+    expect(dentalPrompt).toContain('Pieza 3.6 con caries profunda.');
+
+    const clean = ExportFormatter.toCleanPlainText([
+      {
+        id: '1',
+        sessionId: 's1',
+        start: 3,
+        end: 6,
+        text: '¿En qué cofre está la cosa?',
+        originalText: '¿En qué cofre está la cosa?',
+        edited: false,
+        createdAt: 1,
+        updatedAt: 1,
+      },
+      {
+        id: '2',
+        sessionId: 's1',
+        start: 15,
+        end: 20,
+        text: 'Acá en el tercero.',
+        originalText: 'Acá en el tercero.',
+        speaker: 'Odontólogo',
+        edited: false,
+        createdAt: 2,
+        updatedAt: 2,
+      },
+    ]);
+
+    expect(clean).toBe('¿En qué cofre está la cosa?\n\nOdontólogo: Acá en el tercero.');
+    expect(clean).not.toContain('[00:03');
+  });
 });

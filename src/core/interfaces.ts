@@ -75,9 +75,14 @@ export interface ITranscriptionEngine {
     options?: {
       language?: string;
       initialPrompt?: string;
+      segmentIndex?: number;
+      startSec?: number;
+      endSec?: number;
     }
   ): Promise<TranscriptionResult>;
   dispose(): Promise<void>;
+  isReady(): boolean;
   getActiveTier(): ModelTier;
   getBackend(): 'webgpu' | 'wasm';
+  getActiveBackend(): 'webgpu' | 'wasm';
 }

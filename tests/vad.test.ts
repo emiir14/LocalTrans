@@ -54,4 +54,45 @@ describe('ClinicalAudioSegmenter (VAD)', () => {
       expect(seg.endSec - seg.startSec).toBeLessThanOrEqual(5.5);
     }
   });
+
+  it('preserves soft speech instead of dropping quiet speakers', () => {
+    const segmenter = new ClinicalAudioSegmenter();
+    const sampleRate = 16000;
+    const audio = new Float32Array(sampleRate * 3);
+    // Quiet 350Hz voice-like tone (peak ~0.014) between 0.5s and 2.2s
+    for (let i = Math.floor(sampleRate * 0.5); i < Math.floor(sampleRate * 2.2); i++) {
+      audio[i] = Math.sin((2 * Math.PI * 350 * i) / sampleRate) * 0.014;
+    }
+    const segments = segmenter.segmentAudio(audio);
+    expect(segments.length).toBe(1);
+    expect(segments[0].startSec).toBeLessThanOrEqual(0.6);
+    expect(segments[0].endSec).toBeGreaterThanOrEqual(2.1);
+  });
+
+  it('levels quiet speaker windows without clipping loud peaks', () => {
+    const segmenter = new ClinicalAudioSegmenter();
+    const sampleRate = 16000;
+    const audio = new Float32Array(sampleRate * 2);
+    // First second: loud voice (peak 0.8)
+    for (let i = 0; i < sampleRate; i++) {
+      audio[i] = Math.sin((2 * Math.PI * 250 * i) / sampleRate) * 0.8;
+    }
+    // Second second: quiet voice (peak 0.03)
+    for (let i = sampleRate; i < sampleRate * 2; i++) {
+      audio[i] = Math.sin((2 * Math.PI * 250 * i) / sampleRate) * 0.03;
+    }
+
+    const leveled = segmenter.levelWindowedAudio(audio, 0.002);
+    let maxFirst = 0;
+    let maxSecond = 0;
+    for (let i = 0; i < sampleRate; i++) {
+      maxFirst = Math.max(maxFirst, Math.abs(leveled[i]));
+    }
+    for (let i = sampleRate + 2000; i < sampleRate * 2; i++) {
+      maxSecond = Math.max(maxSecond, Math.abs(leveled[i]));
+    }
+
+    expect(maxFirst).toBeLessThanOrEqual(0.98);
+    expect(maxSecond).toBeGreaterThan(0.08);
+  });
 });

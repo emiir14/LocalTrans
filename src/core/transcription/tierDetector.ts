@@ -35,13 +35,13 @@ export const TIER_CONFIGS: Record<Exclude<ModelTier, 'auto'>, ModelTierConfig> =
     tier: 'max',
     modelId: 'onnx-community/whisper-large-v3-turbo',
     label: 'Máxima precisión (whisper-large-v3-turbo)',
-    description: 'Mayor fidelidad en casos específicos (~350 MB). 800 millones de parámetros. Requiere PC potente con WebGPU.',
+    description: 'Mayor fidelidad en casos específicos (~480 MB, decodificador q8). 800 millones de parámetros. Requiere PC potente con WebGPU.',
     defaultBackend: 'webgpu',
     dtype: {
       encoder_model: 'fp16',
-      decoder_model_merged: 'q4',
+      decoder_model_merged: 'q8',
     },
-    estimatedDownloadMb: 350,
+    estimatedDownloadMb: 480,
   },
   // Legacy alias for existing persisted databases: automatically uses whisper-small
   fast: {

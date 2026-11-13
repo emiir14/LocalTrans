@@ -11,6 +11,7 @@ const DEFAULT_SETTINGS: (workspaceId: string) => AppSettings = (workspaceId) => 
   requireConsent: true,
   autoTranscribeOnStop: false,
   progressiveTranscription: true,
+  transcriptionMode: 'dental',
   theme: 'system',
   updatedAt: Date.now(),
 });

@@ -17,7 +17,7 @@ import {
 import { getSharedWhisperEngine, ProgressCallbackData } from '../core/transcription/engine';
 import { checkModelCacheStatus, ModelCacheStatus } from '../core/transcription/modelCache';
 import { PipelineProgress, TranscriptionPipeline } from '../core/transcription/pipeline';
-import { CLINICAL_WHISPER_INITIAL_PROMPT } from '../core/transcription/prompts';
+import { buildSegmentPrompt } from '../core/transcription/prompts';
 import { ClinicalAudioSegmenter } from '../core/transcription/vad';
 import {
   AppSettings,
@@ -28,6 +28,7 @@ import {
   Profile,
   Session,
   TranscriptSegment,
+  TranscriptionMode,
   Workspace,
 } from '../core/types';
 import { wakeLockManager } from '../core/utils/wakeLockManager';
@@ -112,13 +113,14 @@ class BackgroundChunkTranscriber {
       const speechSegments = this.segmenter.segmentAudio(float32);
       if (speechSegments.length === 0) return;
 
-      const glossaryEntries = await glossaryRepo.getAll(workspaceId);
-      const initialPrompt = CLINICAL_WHISPER_INITIAL_PROMPT;
+      const mode: TranscriptionMode = useAppStore.getState().settings?.transcriptionMode || 'dental';
+      const glossaryEntries = mode === 'dental' ? await glossaryRepo.getAll(workspaceId) : [];
 
       for (let i = 0; i < speechSegments.length; i++) {
         const seg = speechSegments[i];
         const segStart = chunk.startTime + seg.startSec;
         const segEnd = chunk.startTime + seg.endSec;
+        const initialPrompt = buildSegmentPrompt(mode, this.lastTranscribedText);
 
         const res = await engine.transcribe(seg.samples, {
           language: 'es',
@@ -130,7 +132,7 @@ class BackgroundChunkTranscriber {
 
         const rawText = res.text?.trim() || '';
         if (rawText && !isHallucination(rawText) && !isConsecutiveDuplicate(rawText, this.lastTranscribedText)) {
-          const processedText = applyGlossary(rawText, glossaryEntries);
+          const processedText = mode === 'dental' ? applyGlossary(rawText, glossaryEntries) : rawText;
           const segment: TranscriptSegment = {
             id: `seg_${sessionId}_bg_${Date.now()}_${chunk.chunkIndex}_${i}`,
             sessionId,
@@ -169,7 +171,7 @@ class BackgroundChunkTranscriber {
 
 export const backgroundChunkTranscriber = new BackgroundChunkTranscriber();
 
-export type AppView = 'home' | 'recording' | 'detail' | 'settings' | 'privacy';
+export type AppView = 'home' | 'recording' | 'detail' | 'downloads' | 'settings' | 'privacy';
 
 interface AppState {
   currentView: AppView;
@@ -233,7 +235,7 @@ interface AppState {
   dismissRecovery: () => Promise<void>;
   startTranscription: (
     sessionId: string,
-    options?: { forceRetranscribe?: boolean }
+    options?: { forceRetranscribe?: boolean; modeOverride?: TranscriptionMode }
   ) => Promise<void>;
   cancelTranscription: () => void;
   updateSessionMeta: (
@@ -764,7 +766,10 @@ export const useAppStore = create<AppState>((set, get) => ({
             };
           });
         },
-        { forceRetranscribe: options.forceRetranscribe }
+        {
+          forceRetranscribe: options.forceRetranscribe,
+          modeOverride: options.modeOverride,
+        }
       );
 
       set({

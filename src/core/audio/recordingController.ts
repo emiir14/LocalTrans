@@ -164,16 +164,22 @@ export class RecordingController {
 
     this.sourceNode = ctx.createMediaStreamSource(stream);
 
-    // Human vocal bandpass (80Hz - 7500Hz) to attenuate desk thumps & ultrasonic/turbine noise
+    // Human vocal bandpass (80Hz - 7000Hz) with 24dB/oct anti-aliasing rolloff
+    // so frequencies above 8kHz Nyquist don't alias onto consonants during 16kHz resampling
     const highpass = ctx.createBiquadFilter();
     highpass.type = 'highpass';
     highpass.frequency.value = 80;
-    highpass.Q.value = 0.7;
+    highpass.Q.value = 0.707;
 
-    const lowpass = ctx.createBiquadFilter();
-    lowpass.type = 'lowpass';
-    lowpass.frequency.value = 7500;
-    lowpass.Q.value = 0.7;
+    const lowpassStage1 = ctx.createBiquadFilter();
+    lowpassStage1.type = 'lowpass';
+    lowpassStage1.frequency.value = 7000;
+    lowpassStage1.Q.value = 0.707;
+
+    const lowpassStage2 = ctx.createBiquadFilter();
+    lowpassStage2.type = 'lowpass';
+    lowpassStage2.frequency.value = 7000;
+    lowpassStage2.Q.value = 0.707;
 
     this.workletNode = new AudioWorkletNode(ctx, 'pcm-recorder-processor');
 
@@ -202,8 +208,9 @@ export class RecordingController {
     };
 
     this.sourceNode.connect(highpass);
-    highpass.connect(lowpass);
-    lowpass.connect(this.workletNode);
+    highpass.connect(lowpassStage1);
+    lowpassStage1.connect(lowpassStage2);
+    lowpassStage2.connect(this.workletNode);
     const silentGain = ctx.createGain();
     silentGain.gain.value = 0;
     this.workletNode.connect(silentGain);

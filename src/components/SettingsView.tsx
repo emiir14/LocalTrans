@@ -321,7 +321,7 @@ export const SettingsView: React.FC = () => {
             {
               id: 'max' as const,
               label: 'Máxima resolución (whisper-large-v3-turbo)',
-              desc: 'Modelo de 800M parámetros (~350 MB). Máxima fidelidad acústica para consultas extensas o gabinetes con hardware potente.',
+              desc: 'Modelo de 800M parámetros (~480 MB, decodificador q8). Máxima fidelidad acústica para consultas extensas o hardware potente.',
             },
           ].map((tier) => {
             const currentTier = settings?.modelTier || 'balanced';
@@ -391,6 +391,57 @@ export const SettingsView: React.FC = () => {
               </div>
             );
           })}
+        </div>
+
+        {/* Transcription Context Mode Switch */}
+        <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
+          <div>
+            <div className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+              Contexto del vocabulario (Prompt de Whisper)
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+              Elegí si querés priorizar terminología odontológica o español general sin sesgo médico (reuniones, charlas, gaming).
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {[
+              {
+                id: 'dental' as const,
+                title: 'Odontología (Clínico)',
+                desc: 'Aplica vocabulario dental, piezas FDI y corrección automática del glosario.',
+              },
+              {
+                id: 'general' as const,
+                title: 'General / Conversación libre',
+                desc: 'Español rioplatense neutro sin glosario dental para evitar palabras forzadas.',
+              },
+            ].map((modeOption) => {
+              const activeMode = settings?.transcriptionMode || 'dental';
+              const isSelected = activeMode === modeOption.id;
+              return (
+                <button
+                  key={modeOption.id}
+                  type="button"
+                  onClick={() => updateSettings({ transcriptionMode: modeOption.id })}
+                  className={`p-3.5 rounded-2xl border text-left transition-all min-h-[44px] ${
+                    isSelected
+                      ? 'border-teal-600 bg-teal-50/50 dark:bg-teal-950/30 ring-1 ring-teal-600'
+                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                      {modeOption.title}
+                    </span>
+                    {isSelected && <Check className="w-4 h-4 text-teal-600 shrink-0" />}
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                    {modeOption.desc}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </section>
 

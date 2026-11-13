@@ -1,0 +1,32 @@
+[package]
+name = "escriba"
+version = "1.0.0"
+description = "Escriba - Transcripción local privada con whisper.cpp nativo"
+authors = ["Escriba"]
+edition = "2021"
+
+[lib]
+name = "escriba_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-single-instance = "2"
+tauri-plugin-process = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["fs", "io-util", "sync", "rt-multi-thread"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream"] }
+futures-util = "0.3"
+base64 = "0.22"
+whisper-rs = { version = "0.16", features = ["vulkan"] }
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = 3
+strip = true

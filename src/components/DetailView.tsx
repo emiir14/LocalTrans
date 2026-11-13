@@ -18,9 +18,6 @@ import {
   FileText,
   Volume2,
   ShieldCheck,
-  Terminal,
-  ChevronDown,
-  ChevronUp,
   Cpu,
   Radio,
   Sun,
@@ -37,7 +34,7 @@ import {
   formatClinicalNoteText,
 } from '../core/clinical/clinicalTemplates';
 import { ExportFormatter, formatTimeDisplay } from '../core/export/formatter';
-import { ClinicalNote, ClinicalTemplateId, TranscriptSegment } from '../core/types';
+import { ClinicalNote, ClinicalTemplateId, TranscriptSegment, TranscriptionMode } from '../core/types';
 import { audioStore, useAppStore } from '../store/useAppStore';
 
 const SPEAKER_CYCLE: Array<string | undefined> = [
@@ -77,6 +74,8 @@ export const DetailView: React.FC = () => {
     openConfirm,
     showToast,
     wakeLockActive,
+    settings,
+    updateSettings,
   } = useAppStore();
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -89,7 +88,6 @@ export const DetailView: React.FC = () => {
   const [showTimestamps, setShowTimestamps] = useState(true);
   const [highlightFdi, setHighlightFdi] = useState(true);
   const [autoScroll, setAutoScroll] = useState(true);
-  const [showLiveLogs, setShowLiveLogs] = useState(false);
   const [transcriptSearch, setTranscriptSearch] = useState('');
   const [editingSegmentId, setEditingSegmentId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
@@ -242,11 +240,22 @@ export const DetailView: React.FC = () => {
     return s.text.toLowerCase().includes(transcriptSearch.toLowerCase());
   });
 
-  const handleCopyText = () => {
+  const activeTranscriptionMode: TranscriptionMode = settings?.transcriptionMode || 'dental';
+
+  const handleCopyCleanAll = () => {
+    const cleanTxt = ExportFormatter.toCleanPlainText(activeTranscript);
+    navigator.clipboard.writeText(cleanTxt);
+    setCopiedType('clean');
+    showToast('Toda la transcripción copiada al portapapeles', 'success');
+    setTimeout(() => setCopiedType(null), 2500);
+  };
+
+  const handleCopyTextWithTimestamps = () => {
     const txt = ExportFormatter.toTxt(activeSession, activeTranscript);
     navigator.clipboard.writeText(txt);
     setCopiedType('txt');
-    showToast('Texto copiado al portapapeles', 'success');
+    setShowExportMenu(false);
+    showToast('Transcripción con tiempos copiada', 'success');
     setTimeout(() => setCopiedType(null), 2500);
   };
 
@@ -513,75 +522,90 @@ export const DetailView: React.FC = () => {
         </div>
 
         {/* Top Actions */}
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           {activeTranscript.length > 0 && (
-            <button
-              onClick={handleCopyForAi}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-200 border border-teal-200 dark:border-teal-800/80 hover:bg-teal-100 dark:hover:bg-teal-900/40 transition-colors whitespace-nowrap min-h-[44px]"
-              title="Copia el texto limpio con encabezado clínico estructurado para enviar a tu IA"
-            >
-              {copiedType === 'ai' ? <Check className="w-3.5 h-3.5 text-teal-600" /> : <Sparkles className="w-3.5 h-3.5 text-teal-600" />}
-              <span>Copiar para IA</span>
-            </button>
-          )}
-
-          {activeTranscript.length > 0 && (
-            <div className="relative">
+            <>
               <button
-                onClick={() => setShowExportMenu(!showExportMenu)}
-                className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors min-h-[44px] whitespace-nowrap"
+                onClick={handleCopyCleanAll}
+                className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors whitespace-nowrap min-h-[44px]"
+                title="Copia toda la transcripción en texto limpio sin marcas de tiempo"
               >
-                <Download className="w-3.5 h-3.5 text-slate-500" />
-                <span>Exportar</span>
+                {copiedType === 'clean' ? (
+                  <Check className="w-3.5 h-3.5 text-teal-600" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5 text-slate-500" />
+                )}
+                <span>{copiedType === 'clean' ? 'Copiado' : 'Copiar todo'}</span>
               </button>
 
-              {showExportMenu && (
-                <div className="absolute right-0 mt-2 w-60 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl p-1.5 z-40 space-y-0.5">
-                  <button
-                    onClick={handlePrintPdf}
-                    className="w-full text-left px-3 py-2.5 text-xs font-semibold rounded-lg text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-950/50 flex items-center justify-between"
-                  >
-                    <span>Imprimir / Guardar PDF</span>
-                    <Printer className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={handleCopyText}
-                    className="w-full text-left px-3 py-2 text-xs rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between"
-                  >
-                    <span>Copiar texto plano</span>
-                    <Copy className="w-3.5 h-3.5 text-slate-400" />
-                  </button>
-                  <button
-                    onClick={() => handleDownload('txt')}
-                    className="w-full text-left px-3 py-2 text-xs rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between"
-                  >
-                    <span>Descargar .txt</span>
-                    <FileText className="w-3.5 h-3.5 text-slate-400" />
-                  </button>
-                  <button
-                    onClick={() => handleDownload('md')}
-                    className="w-full text-left px-3 py-2 text-xs rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between"
-                  >
-                    <span>Descargar Markdown (.md)</span>
-                    <FileText className="w-3.5 h-3.5 text-slate-400" />
-                  </button>
-                  <button
-                    onClick={() => handleDownload('srt')}
-                    className="w-full text-left px-3 py-2 text-xs rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between"
-                  >
-                    <span>Descargar Subtítulos (.srt)</span>
-                    <Clock className="w-3.5 h-3.5 text-slate-400" />
-                  </button>
-                  <button
-                    onClick={() => handleDownload('json')}
-                    className="w-full text-left px-3 py-2 text-xs rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between"
-                  >
-                    <span>Descargar Datos (.json)</span>
-                    <FileText className="w-3.5 h-3.5 text-slate-400" />
-                  </button>
-                </div>
-              )}
-            </div>
+              <button
+                onClick={() => handleDownload('txt')}
+                className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors whitespace-nowrap min-h-[44px]"
+                title="Descargar transcripción completa en archivo .txt"
+              >
+                <Download className="w-3.5 h-3.5 text-slate-500" />
+                <span>Descargar .txt</span>
+              </button>
+
+              <button
+                onClick={handleCopyForAi}
+                className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-200 border border-teal-200 dark:border-teal-800/80 hover:bg-teal-100 dark:hover:bg-teal-900/40 transition-colors whitespace-nowrap min-h-[44px]"
+                title="Copia el texto limpio con encabezado clínico estructurado para enviar a tu IA"
+              >
+                {copiedType === 'ai' ? <Check className="w-3.5 h-3.5 text-teal-600" /> : <Sparkles className="w-3.5 h-3.5 text-teal-600" />}
+                <span>Copiar para IA</span>
+              </button>
+
+              <div className="relative">
+                <button
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors min-h-[44px] whitespace-nowrap"
+                >
+                  <FileText className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Más formatos</span>
+                </button>
+
+                {showExportMenu && (
+                  <div className="absolute right-0 mt-2 w-60 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl p-1.5 z-40 space-y-0.5">
+                    <button
+                      onClick={handlePrintPdf}
+                      className="w-full text-left px-3 py-2.5 text-xs font-semibold rounded-lg text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-950/50 flex items-center justify-between"
+                    >
+                      <span>Imprimir / Guardar PDF</span>
+                      <Printer className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={handleCopyTextWithTimestamps}
+                      className="w-full text-left px-3 py-2 text-xs rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between"
+                    >
+                      <span>Copiar con tiempos y cabecera</span>
+                      <Copy className="w-3.5 h-3.5 text-slate-400" />
+                    </button>
+                    <button
+                      onClick={() => handleDownload('md')}
+                      className="w-full text-left px-3 py-2 text-xs rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between"
+                    >
+                      <span>Descargar Markdown (.md)</span>
+                      <FileText className="w-3.5 h-3.5 text-slate-400" />
+                    </button>
+                    <button
+                      onClick={() => handleDownload('srt')}
+                      className="w-full text-left px-3 py-2 text-xs rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between"
+                    >
+                      <span>Descargar Subtítulos (.srt)</span>
+                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                    </button>
+                    <button
+                      onClick={() => handleDownload('json')}
+                      className="w-full text-left px-3 py-2 text-xs rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between"
+                    >
+                      <span>Descargar Datos (.json)</span>
+                      <FileText className="w-3.5 h-3.5 text-slate-400" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
           )}
 
           <button
@@ -814,34 +838,6 @@ export const DetailView: React.FC = () => {
                     </p>
                   </div>
 
-                  <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
-                    <button
-                      type="button"
-                      onClick={() => setShowLiveLogs(!showLiveLogs)}
-                      className="w-full px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between transition-colors"
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <Terminal className="w-3.5 h-3.5 text-slate-500" />
-                        <span>Registro de actividad en vivo</span>
-                      </span>
-                      {showLiveLogs ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                    </button>
-                    {showLiveLogs && (
-                      <div className="p-2.5 bg-slate-900 text-slate-200 font-mono text-[10px] space-y-1 max-h-36 overflow-y-auto">
-                        {transcriptionProgress?.logs && transcriptionProgress.logs.length > 0 ? (
-                          transcriptionProgress.logs.map((log, lIdx) => (
-                            <div key={lIdx} className="leading-tight text-teal-400">
-                              <span className="text-slate-500 mr-1.5">›</span>
-                              {log}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="text-slate-500 italic">Iniciando registro de eventos...</div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
                   <button
                     onClick={() => cancelTranscription()}
                     className="w-full py-2.5 px-4 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors min-h-[44px]"
@@ -851,8 +847,34 @@ export const DetailView: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-4 pt-2">
+                  <div className="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/70">
+                    <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                      Contexto:
+                    </span>
+                    <div className="flex items-center gap-1 p-0.5 bg-slate-200/70 dark:bg-slate-900 rounded-xl">
+                      {([
+                        { id: 'dental', label: 'Odontología' },
+                        { id: 'general', label: 'General' },
+                      ] as const).map((m) => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => updateSettings({ transcriptionMode: m.id })}
+                          className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-colors min-h-[30px] ${
+                            activeTranscriptionMode === m.id
+                              ? 'bg-white dark:bg-slate-800 text-teal-700 dark:text-teal-300 shadow-xs'
+                              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                          }`}
+                        >
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                    Whisper segmentará el audio, filtrará silencios y corregirá términos odontológicos automáticamente con tu glosario.
+                    {activeTranscriptionMode === 'dental'
+                      ? 'Whisper segmentará el audio, filtrará silencios y aplicará tu glosario odontológico.'
+                      : 'Whisper transcribirá el audio en español general sin forzar términos odontológicos.'}
                   </p>
                   <button
                     onClick={() => startTranscription(activeSession.id)}
@@ -871,11 +893,36 @@ export const DetailView: React.FC = () => {
                 <span>Acciones y datos locales</span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Puedes volver a transcribir si cambiaste el modelo o agregaste términos al glosario, o liberar el audio para ahorrar espacio.
+                Podés cambiar el contexto o modelo y volver a transcribir con el audio guardado, o liberar el archivo de audio.
               </p>
-              <div className="space-y-2 pt-1">
+              <div className="space-y-2.5 pt-1">
                 {!activeSession.audioDeleted && (
                   <>
+                    <div className="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/70">
+                      <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                        Contexto:
+                      </span>
+                      <div className="flex items-center gap-1 p-0.5 bg-slate-200/70 dark:bg-slate-900 rounded-xl">
+                        {([
+                          { id: 'dental', label: 'Odontología' },
+                          { id: 'general', label: 'General' },
+                        ] as const).map((m) => (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => updateSettings({ transcriptionMode: m.id })}
+                            className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-colors min-h-[30px] ${
+                              activeTranscriptionMode === m.id
+                                ? 'bg-white dark:bg-slate-800 text-teal-700 dark:text-teal-300 shadow-xs'
+                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                            }`}
+                          >
+                            {m.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     <button
                       onClick={handleRetranscribe}
                       className="w-full py-2.5 px-3 rounded-xl text-xs font-semibold text-teal-800 dark:text-teal-200 bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900/40 border border-teal-200/80 dark:border-teal-800/60 transition-colors flex items-center justify-center gap-2 min-h-[44px]"

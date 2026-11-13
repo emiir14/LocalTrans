@@ -6,6 +6,7 @@
 import React, { useEffect } from 'react';
 import { ConfirmModal } from './components/ConfirmModal';
 import { DetailView } from './components/DetailView';
+import { DownloadsView } from './components/DownloadsView';
 import { HomeView } from './components/HomeView';
 import { OnboardingModal } from './components/OnboardingModal';
 import { PrivacyView } from './components/PrivacyView';
@@ -55,6 +56,7 @@ export default function App() {
         {currentView === 'home' && <HomeView />}
         {currentView === 'recording' && <RecordingView />}
         {currentView === 'detail' && <DetailView />}
+        {currentView === 'downloads' && <DownloadsView />}
         {currentView === 'settings' && <SettingsView />}
         {currentView === 'privacy' && <PrivacyView />}
       </main>

@@ -1,6 +1,8 @@
 import { ITranscriptionEngine, TranscriptionResult } from '../interfaces';
+import { isTauriDesktop } from '../runtime/platform';
 import { ModelTier } from '../types';
 import { detectCorruptOutput } from './corruptionHeuristics';
+import { TauriWhisperEngine } from './tauriEngine';
 import { detectHardwareCapabilities, resolveTier, TIER_CONFIGS } from './tierDetector';
 import { wakeLockManager } from '../utils/wakeLockManager';
 
@@ -196,7 +198,13 @@ export class WhisperTranscriptionEngine implements ITranscriptionEngine {
         throw new Error('Transcription engine must be loaded before transcribe()');
       }
 
-      const { initialPrompt, segmentIndex = 0, startSec = 0, endSec = audio.length / 16000 } = options;
+      const {
+        language = 'es',
+        initialPrompt,
+        segmentIndex = 0,
+        startSec = 0,
+        endSec = audio.length / 16000,
+      } = options;
 
       const runSegment = async (audioData: Float32Array): Promise<{ text: string }> => {
         return new Promise((resolve, reject) => {
@@ -213,6 +221,7 @@ export class WhisperTranscriptionEngine implements ITranscriptionEngine {
                 startSec,
                 endSec,
                 initialPrompt,
+                language,
               },
             },
             [copy.buffer]
@@ -258,14 +267,19 @@ export class WhisperTranscriptionEngine implements ITranscriptionEngine {
   }
 }
 
-let sharedEngineInstance: WhisperTranscriptionEngine | null = null;
+let sharedEngineInstance: ITranscriptionEngine | null = null;
 
 export function getSharedWhisperEngine(
   options: { onCorruptionFallback?: (reason: string) => void } = {}
-): WhisperTranscriptionEngine {
+): ITranscriptionEngine {
   if (!sharedEngineInstance) {
-    sharedEngineInstance = new WhisperTranscriptionEngine(options);
-  } else if (options.onCorruptionFallback) {
+    sharedEngineInstance = isTauriDesktop()
+      ? new TauriWhisperEngine()
+      : new WhisperTranscriptionEngine(options);
+  } else if (
+    sharedEngineInstance instanceof WhisperTranscriptionEngine &&
+    options.onCorruptionFallback
+  ) {
     sharedEngineInstance.setCorruptionFallbackHandler(options.onCorruptionFallback);
   }
   return sharedEngineInstance;

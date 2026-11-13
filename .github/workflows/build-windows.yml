@@ -1,0 +1,94 @@
+name: Build Escriba Windows (.exe)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: 'Publicar en GitHub Releases (habilita el botón de descarga en tu web)'
+        type: boolean
+        default: true
+      release_tag:
+        description: 'Versión del Release (cambiá a v1.0.1 en futuras actualizaciones)'
+        type: string
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Rust stable (MSVC)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Setup LLVM / Clang (required for whisper-rs bindgen)
+        uses: KyleMayes/install-llvm-action@v2
+        with:
+          version: '18.1'
+
+      - name: Setup Vulkan SDK (GPU acceleration for NVIDIA / AMD / Intel)
+        uses: humbletim/setup-vulkan-sdk@v1
+        with:
+          vulkan-version: '1.3.296.0'
+
+      - name: Rust & Cargo cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+          prefix-key: windows-vulkan
+
+      - name: Install web dependencies
+        run: npm ci
+
+      - name: Generate exact Windows & NSIS icons
+        run: npx --yes @tauri-apps/cli@2 icon public/pwa-512x512.png
+
+      - name: Build Tauri NSIS installer (.exe)
+        run: npx --yes @tauri-apps/cli@2 build --bundles nsis
+
+      - name: Rename installer to canonical Escriba-Setup.exe
+        shell: pwsh
+        run: |
+          $nsisDir = "src-tauri\target\release\bundle\nsis"
+          $exe = Get-ChildItem -Path $nsisDir -Filter "*-setup.exe" | Select-Object -First 1
+          if (-not $exe) { throw "No NSIS setup .exe found in $nsisDir" }
+          Copy-Item $exe.FullName "$nsisDir\Escriba-Setup.exe" -Force
+          Get-FileHash "$nsisDir\Escriba-Setup.exe" -Algorithm SHA256 | Out-File "$nsisDir\Escriba-Setup.exe.sha256"
+
+      - name: Upload Windows installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: escriba-windows-exe
+          path: |
+            src-tauri/target/release/bundle/nsis/Escriba-Setup.exe
+            src-tauri/target/release/bundle/nsis/Escriba-Setup.exe.sha256
+
+      - name: Publish to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.publish_release)
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || inputs.release_tag }}
+          target_commitish: ${{ github.sha }}
+          name: Escriba ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || inputs.release_tag }}
+          files: |
+            src-tauri/target/release/bundle/nsis/Escriba-Setup.exe
+            src-tauri/target/release/bundle/nsis/Escriba-Setup.exe.sha256
+          generate_release_notes: true

@@ -6,11 +6,12 @@ import {
   ISessionRepository,
   ISettingsRepository,
   ITranscriptRepository,
+  ITranscriptionEngine,
 } from '../interfaces';
 import { formatTimeDisplay } from '../export/formatter';
-import { ModelTier, TranscriptSegment } from '../types';
-import { getSharedWhisperEngine, WhisperTranscriptionEngine } from './engine';
-import { CLINICAL_WHISPER_INITIAL_PROMPT } from './prompts';
+import { ModelTier, TranscriptSegment, TranscriptionMode } from '../types';
+import { getSharedWhisperEngine } from './engine';
+import { buildSegmentPrompt } from './prompts';
 import { ClinicalAudioSegmenter } from './vad';
 import { wakeLockManager } from '../utils/wakeLockManager';
 
@@ -25,13 +26,12 @@ export interface PipelineProgress {
   modelDownloadProgress?: number;
   lastTranscribedText?: string;
   currentSegmentTime?: string;
-  logs?: string[];
   activeBackend?: 'webgpu' | 'wasm';
   activeTier?: ModelTier;
 }
 
 export class TranscriptionPipeline {
-  private engine: WhisperTranscriptionEngine;
+  private engine: ITranscriptionEngine;
   private isCancelled = false;
 
   constructor(
@@ -56,7 +56,7 @@ export class TranscriptionPipeline {
     workspaceId: string,
     onProgress?: (progress: PipelineProgress) => void,
     onSegmentTranscribed?: (segment: TranscriptSegment) => void,
-    runOptions: { forceRetranscribe?: boolean } = {}
+    runOptions: { forceRetranscribe?: boolean; modeOverride?: TranscriptionMode } = {}
   ): Promise<TranscriptSegment[]> {
     this.isCancelled = false;
     await wakeLockManager.acquire(`pipeline_${sessionId}`);
@@ -84,14 +84,14 @@ export class TranscriptionPipeline {
         throw new Error('No se encontraron datos de audio para esta sesión');
       }
 
-      // 3. Segment audio using clinical VAD
+      // 3. Segment audio using VAD + windowed audio leveling
       onProgress?.({
         sessionId,
         percent: 10,
         currentSegment: 0,
         totalSegments: 1,
         estimatedRemainingSec: 0,
-        statusText: 'Detectando actividad de voz (VAD)...',
+        statusText: 'Detectando actividad de voz y nivelando audio...',
       });
 
       const segmenter = new ClinicalAudioSegmenter();
@@ -104,6 +104,8 @@ export class TranscriptionPipeline {
 
       // 4. Load Whisper model (when forcing retranscribe, always use the latest chosen settings.modelTier)
       const settings = await this.settingsRepo.get(workspaceId);
+      const transcriptionMode: TranscriptionMode =
+        runOptions.modeOverride || settings.transcriptionMode || 'dental';
       const tier: ModelTier = runOptions.forceRetranscribe
         ? settings.modelTier || 'balanced'
         : session.modelTierUsed || settings.modelTier || 'balanced';
@@ -144,13 +146,11 @@ export class TranscriptionPipeline {
         await this.transcriptRepo.deleteBySessionId(sessionId);
       }
 
-      // 5. Load Glossary for post-processing
-      const glossaryEntries = await this.glossaryRepo.getAll(workspaceId);
-      const initialPrompt = CLINICAL_WHISPER_INITIAL_PROMPT;
+      // 5. Load Glossary only when operating in clinical dental mode
+      const glossaryEntries =
+        transcriptionMode === 'dental' ? await this.glossaryRepo.getAll(workspaceId) : [];
 
       // 6. Check existing segments to support resumption & progressive pre-transcription.
-      // Any full-audio segment straddling a 30s chunk boundary that was only covered by background chunks
-      // is re-transcribed cleanly with full context to prevent mid-word boundary cuts.
       let existingSegments = await this.transcriptRepo.getBySessionId(sessionId);
 
       const getOverlappingExisting = (seg: { startSec: number; endSec: number }) => {
@@ -177,7 +177,6 @@ export class TranscriptionPipeline {
       const remainingSegments = speechSegments.filter((seg) => !isSegmentAlreadyCovered(seg));
       let allSegments: TranscriptSegment[] = [...existingSegments];
 
-      // If 100% of segments were already processed in background during recording
       if (remainingSegments.length === 0 && existingSegments.length > 0) {
         await this.sessionRepo.update(sessionId, {
           status: 'completed',
@@ -205,15 +204,7 @@ export class TranscriptionPipeline {
       let previousText =
         existingSegments.length > 0 ? existingSegments[existingSegments.length - 1].text : '';
 
-      const logs: string[] = [];
-      logs.push(
-        `VAD completado: ${totalSegments} fragmentos de voz (${alreadyCoveredCount} ya procesados)`
-      );
-      logs.push(
-        `Iniciando motor de transcripción local (${this.engine.getActiveBackend().toUpperCase()})`
-      );
-
-      // 7. Transcribe remaining segments
+      // 7. Transcribe remaining segments with rolling context prompt
       for (let i = 0; i < speechSegments.length; i++) {
         if (this.isCancelled) {
           await this.sessionRepo.update(sessionId, { status: 'recorded' });
@@ -223,6 +214,10 @@ export class TranscriptionPipeline {
         const speechSeg = speechSegments[i];
 
         if (isSegmentAlreadyCovered(speechSeg)) {
+          const overlapping = getOverlappingExisting(speechSeg);
+          if (overlapping.length > 0) {
+            previousText = overlapping[overlapping.length - 1].text;
+          }
           continue;
         }
 
@@ -250,10 +245,11 @@ export class TranscriptionPipeline {
           isDownloadingModel: false,
           currentSegmentTime: segTimeRange,
           lastTranscribedText: previousText || undefined,
-          logs: [...logs],
           activeBackend: this.engine.getActiveBackend(),
           activeTier: this.engine.getActiveTier(),
         });
+
+        const initialPrompt = buildSegmentPrompt(transcriptionMode, previousText);
 
         const res = await this.engine.transcribe(speechSeg.samples, {
           language: 'es',
@@ -263,7 +259,6 @@ export class TranscriptionPipeline {
           endSec: speechSeg.endSec,
         });
 
-        // Check cancellation immediately after inference resolves so stale results are discarded
         if (this.isCancelled) {
           await this.sessionRepo.update(sessionId, { status: 'recorded' });
           throw new Error('Transcripción cancelada por el usuario');
@@ -271,7 +266,6 @@ export class TranscriptionPipeline {
 
         const rawText = res.text?.trim() || '';
 
-        // If this full-context segment crossed a 30s chunk boundary and replaces partial _bg_ fragments, remove them first
         const bgOverlaps = getOverlappingExisting(speechSeg).filter((ex) => ex.id.includes('_bg_'));
         if (bgOverlaps.length > 0) {
           for (const oldBg of bgOverlaps) {
@@ -283,7 +277,8 @@ export class TranscriptionPipeline {
         }
 
         if (rawText && !isHallucination(rawText) && !isConsecutiveDuplicate(rawText, previousText)) {
-          const processedText = applyGlossary(rawText, glossaryEntries);
+          const processedText =
+            transcriptionMode === 'dental' ? applyGlossary(rawText, glossaryEntries) : rawText;
 
           const segment: TranscriptSegment = {
             id: `seg_${sessionId}_${Date.now()}_${i}`,
@@ -301,11 +296,6 @@ export class TranscriptionPipeline {
           allSegments.push(segment);
           previousText = processedText;
 
-          logs.push(
-            `[${segTimeRange}] "${processedText.length > 50 ? processedText.slice(0, 50) + '...' : processedText}"`
-          );
-          if (logs.length > 30) logs.shift();
-
           onSegmentTranscribed?.(segment);
 
           onProgress?.({
@@ -318,25 +308,18 @@ export class TranscriptionPipeline {
             isDownloadingModel: false,
             currentSegmentTime: segTimeRange,
             lastTranscribedText: processedText,
-            logs: [...logs],
             activeBackend: this.engine.getActiveBackend(),
             activeTier: this.engine.getActiveTier(),
           });
-        } else {
-          logs.push(`[${segTimeRange}] (Filtro acústico: ruido de turbina o silencio)`);
-          if (logs.length > 30) logs.shift();
         }
 
         transcribedCount++;
       }
 
-      // 8. Mark session completed
       await this.sessionRepo.update(sessionId, {
         status: 'completed',
         modelTierUsed: this.engine.getActiveTier(),
       });
-
-      logs.push('¡Transcripción finalizada y guardada en el dispositivo!');
 
       onProgress?.({
         sessionId,
@@ -346,7 +329,6 @@ export class TranscriptionPipeline {
         estimatedRemainingSec: 0,
         statusText: '¡Transcripción completada con éxito!',
         lastTranscribedText: previousText || undefined,
-        logs: [...logs],
         activeBackend: this.engine.getActiveBackend(),
         activeTier: this.engine.getActiveTier(),
       });
