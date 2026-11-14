@@ -42,14 +42,24 @@ jobs:
         with:
           targets: aarch64-linux-android
 
-      - name: Setup Android SDK & NDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android NDK and Build Tools
+      - name: Setup Android SDK, NDK and Build Tools
         run: |
-          echo "y" | sdkmanager --install "ndk;27.0.12077973" "build-tools;35.0.0" "platforms;android-35"
-          echo "NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> "$GITHUB_ENV"
-          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> "$GITHUB_ENV"
+          SDK_DIR="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export ANDROID_HOME="$SDK_DIR"
+          export ANDROID_SDK_ROOT="$SDK_DIR"
+          export PATH="$SDK_DIR/cmdline-tools/latest/bin:$SDK_DIR/platform-tools:$PATH"
+          set +o pipefail
+          yes | sdkmanager --licenses >/dev/null
+          set -o pipefail
+          sdkmanager --install "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;27.0.12077973"
+          {
+            echo "ANDROID_HOME=$SDK_DIR"
+            echo "ANDROID_SDK_ROOT=$SDK_DIR"
+            echo "NDK_HOME=$SDK_DIR/ndk/27.0.12077973"
+            echo "ANDROID_NDK_HOME=$SDK_DIR/ndk/27.0.12077973"
+          } >> "$GITHUB_ENV"
+          echo "$SDK_DIR/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "$SDK_DIR/platform-tools" >> "$GITHUB_PATH"
 
       - name: Rust & Cargo cache
         uses: Swatinem/rust-cache@v2
@@ -63,11 +73,11 @@ jobs:
           rm -f package-lock.json
           npm install --no-audit --no-fund
 
-      - name: Generate Android launcher icons
-        run: npx --yes @tauri-apps/cli@2 icon public/pwa-512x512.png
-
       - name: Initialize Tauri Android project
         run: npx --yes @tauri-apps/cli@2 android init --ci
+
+      - name: Generate Android launcher icons
+        run: npx --yes @tauri-apps/cli@2 icon public/pwa-512x512.png
 
       - name: Configure Android microphone & privacy manifest permissions
         run: node scripts/patch-android-project.mjs

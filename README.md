@@ -66,9 +66,21 @@ O conectá el repositorio directamente en tu panel de control de Vercel (Framewo
 
 ---
 
+## Descargas y Firma de Código (Windows y Android)
+
+- **Instaladores oficiales (`.exe` para Windows y `.apk` para Android):** [GitHub Releases](https://github.com/emiir14/LocalTrans/releases)
+- **Política de Privacidad:** [docs/PRIVACY.md](docs/PRIVACY.md) — Escriba no recopila ni envía datos ni audio del usuario a ningún servidor externo; todo se procesa y guarda localmente en el equipo.
+
+Free code signing on Windows provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
+
+---
+
 ## Documentación Técnica Adicional
 
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): Arquitectura por capas, modelo de datos y guía de activación de la nube (Supabase).
 - [docs/DECISIONS.md](docs/DECISIONS.md): Registro de decisiones arquitectónicas (ADR), alternativas evaluadas y fundamentos.
 - [docs/BENCHMARK.md](docs/BENCHMARK.md): Informe de pruebas de rendimiento, factor de tiempo real y mediciones del entorno.
 - [docs/PRIVACY.md](docs/PRIVACY.md): Política de privacidad médica, modelo de consentimiento informado y consideraciones sobre la Ley 25.326.
+- [docs/WINDOWS_EXE_BUILD.md](docs/WINDOWS_EXE_BUILD.md): Compilación del instalador nativo para Windows (`.exe`) con Tauri v2 + `whisper.cpp`.
+- [docs/ANDROID_APK_BUILD.md](docs/ANDROID_APK_BUILD.md): Compilación del paquete nativo para Android (`.apk`).
+- [docs/SIGNPATH_SETUP.md](docs/SIGNPATH_SETUP.md): Integración con SignPath Foundation.

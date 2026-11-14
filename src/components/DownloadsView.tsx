@@ -159,7 +159,26 @@ export const DownloadsView: React.FC = () => {
             </a>
 
             <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-relaxed">
-              Si Windows SmartScreen muestra aviso al ser software gratuito sin certificado pago: tocá <strong>Más información → Ejecutar de todas formas</strong>.
+              Firma gratuita de código abierto provista por{' '}
+              <a
+                href="https://signpath.io"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-slate-600 dark:hover:text-slate-300"
+              >
+                SignPath.io
+              </a>
+              , certificado por{' '}
+              <a
+                href="https://signpath.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-slate-600 dark:hover:text-slate-300"
+              >
+                SignPath Foundation
+              </a>
+              . Si una compilación previa aún muestra SmartScreen: tocá{' '}
+              <strong>Más información → Ejecutar de todas formas</strong>.
             </p>
           </div>
         </section>
