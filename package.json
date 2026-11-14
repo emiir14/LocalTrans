@@ -10,6 +10,7 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "test": "vitest run",
+    "tauri": "npx --yes @tauri-apps/cli@2",
     "tauri:dev": "npx --yes @tauri-apps/cli@2 dev",
     "tauri:build": "npx --yes @tauri-apps/cli@2 build --bundles nsis"
   },
