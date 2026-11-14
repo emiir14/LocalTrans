@@ -10,6 +10,7 @@ import {
   isTauriDesktop,
   openExternalUrl,
   shouldShowDownloadsTab,
+  shouldShowUpdateChecker,
 } from '../core/runtime/platform';
 import { AppView, useAppStore } from '../store/useAppStore';
 import { PWAInstallButton } from './PWAInstallButton';
@@ -32,6 +33,7 @@ export const TopBar: React.FC = () => {
   const [hasUpdateAvailable, setHasUpdateAvailable] = useState(false);
 
   const showDownloads = shouldShowDownloadsTab();
+  const showUpdateChecker = shouldShowUpdateChecker();
 
   const navItems: Array<{ id: AppView; label: string; icon: React.ComponentType<{ className?: string }> }> = [
     { id: 'home', label: 'Grabaciones', icon: Mic },
@@ -40,8 +42,9 @@ export const TopBar: React.FC = () => {
     { id: 'privacy', label: 'Privacidad', icon: Shield },
   ];
 
-  // Silent once-per-session check to highlight when a newer release exists
+  // Silent once-per-session check to highlight when a newer release exists (only in .exe / .apk)
   useEffect(() => {
+    if (!showUpdateChecker) return;
     let cancelled = false;
     const repo = getConfiguredGithubRepo();
     if (!repo) return;
@@ -59,7 +62,7 @@ export const TopBar: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [showUpdateChecker]);
 
   const handleCheckAndDownloadUpdate = async () => {
     if (isCheckingUpdate || downloadProgress !== null) return;
@@ -198,40 +201,42 @@ export const TopBar: React.FC = () => {
             );
           })}
 
-          <div className="relative group flex items-center">
-            <button
-              type="button"
-              onClick={handleCheckAndDownloadUpdate}
-              disabled={isBusy}
-              title={hoverLabel}
-              aria-label="Buscar actualizaciones"
-              className="relative p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-teal-700 dark:hover:text-teal-300 hover:bg-slate-100/80 dark:hover:bg-slate-800/80 transition-colors disabled:opacity-70 flex items-center gap-1.5"
-            >
-              {isBusy ? (
-                <Loader2 className="w-4 h-4 animate-spin text-teal-600 dark:text-teal-400" />
-              ) : (
-                <Download className="w-4 h-4" />
-              )}
-              {downloadProgress !== null && (
-                <span className="text-[11px] font-mono font-semibold text-teal-700 dark:text-teal-300">
-                  {downloadProgress}%
-                </span>
-              )}
-              {hasUpdateAvailable && !isBusy && (
-                <span
-                  aria-hidden="true"
-                  className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-teal-500 ring-2 ring-white dark:ring-slate-900"
-                />
-              )}
-            </button>
+          {showUpdateChecker && (
+            <div className="relative group flex items-center">
+              <button
+                type="button"
+                onClick={handleCheckAndDownloadUpdate}
+                disabled={isBusy}
+                title={hoverLabel}
+                aria-label="Buscar actualizaciones"
+                className="relative p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-teal-700 dark:hover:text-teal-300 hover:bg-slate-100/80 dark:hover:bg-slate-800/80 transition-colors disabled:opacity-70 flex items-center gap-1.5"
+              >
+                {isBusy ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-teal-600 dark:text-teal-400" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                {downloadProgress !== null && (
+                  <span className="text-[11px] font-mono font-semibold text-teal-700 dark:text-teal-300">
+                    {downloadProgress}%
+                  </span>
+                )}
+                {hasUpdateAvailable && !isBusy && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-teal-500 ring-2 ring-white dark:ring-slate-900"
+                  />
+                )}
+              </button>
 
-            <span
-              role="tooltip"
-              className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-2 px-2.5 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-lg opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity z-40"
-            >
-              {hoverLabel}
-            </span>
-          </div>
+              <span
+                role="tooltip"
+                className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-2 px-2.5 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-lg opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity z-40"
+              >
+                {hoverLabel}
+              </span>
+            </div>
+          )}
         </nav>
 
         {/* Zone 3: 1 Primary Action + Install Button */}
@@ -276,27 +281,29 @@ export const TopBar: React.FC = () => {
             );
           })}
 
-          <button
-            type="button"
-            onClick={() => {
-              setMobileMenuOpen(false);
-              handleCheckAndDownloadUpdate();
-            }}
-            disabled={isBusy}
-            className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          >
-            <span className="flex items-center gap-3">
-              {isBusy ? (
-                <Loader2 className="w-4 h-4 animate-spin text-teal-600" />
-              ) : (
-                <Download className="w-4 h-4 text-slate-500" />
+          {showUpdateChecker && (
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                handleCheckAndDownloadUpdate();
+              }}
+              disabled={isBusy}
+              className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              <span className="flex items-center gap-3">
+                {isBusy ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-teal-600" />
+                ) : (
+                  <Download className="w-4 h-4 text-slate-500" />
+                )}
+                <span>{hoverLabel}</span>
+              </span>
+              {hasUpdateAvailable && !isBusy && (
+                <span className="w-2 h-2 rounded-full bg-teal-500" aria-hidden="true" />
               )}
-              <span>{hoverLabel}</span>
-            </span>
-            {hasUpdateAvailable && !isBusy && (
-              <span className="w-2 h-2 rounded-full bg-teal-500" aria-hidden="true" />
-            )}
-          </button>
+            </button>
+          )}
         </div>
       )}
     </header>

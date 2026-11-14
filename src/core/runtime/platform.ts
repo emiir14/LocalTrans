@@ -59,6 +59,10 @@ export function shouldShowDownloadsTab(): boolean {
   return !isTauriDesktop() && !isNativeMobileApp();
 }
 
+export function shouldShowUpdateChecker(): boolean {
+  return isTauriDesktop() || isNativeMobileApp();
+}
+
 export function getDefaultModelTier(): 'balanced' | 'max' {
   return isTauriDesktop() ? 'max' : 'balanced';
 }

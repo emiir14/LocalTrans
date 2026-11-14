@@ -13,6 +13,7 @@ import {
   isTauriMobileAndroid,
   normalizeRepoSlug,
   shouldShowDownloadsTab,
+  shouldShowUpdateChecker,
 } from '../src/core/runtime/platform';
 import { checkModelCacheStatus } from '../src/core/transcription/modelCache';
 import { TauriWhisperEngine } from '../src/core/transcription/tauriEngine';
@@ -51,6 +52,7 @@ describe('Platform & Desktop Runtime Bridge', () => {
     expect(isTauriMobileAndroid()).toBe(false);
     expect(isNativeMobileApp()).toBe(false);
     expect(shouldShowDownloadsTab()).toBe(true);
+    expect(shouldShowUpdateChecker()).toBe(false);
     expect(getDefaultModelTier()).toBe('balanced');
   });
 
@@ -70,6 +72,7 @@ describe('Platform & Desktop Runtime Bridge', () => {
     expect(isTauriMobileAndroid()).toBe(false);
     expect(getTauriBridge()?.core.invoke).toBe(mockInvoke);
     expect(shouldShowDownloadsTab()).toBe(false);
+    expect(shouldShowUpdateChecker()).toBe(true);
     expect(getDefaultModelTier()).toBe('max');
   });
 
@@ -89,6 +92,7 @@ describe('Platform & Desktop Runtime Bridge', () => {
     expect(isTauriMobileAndroid()).toBe(true);
     expect(isNativeMobileApp()).toBe(true);
     expect(shouldShowDownloadsTab()).toBe(false);
+    expect(shouldShowUpdateChecker()).toBe(true);
     expect(getDefaultModelTier()).toBe('balanced');
   });
 
