@@ -13,7 +13,6 @@ import {
   shouldShowUpdateChecker,
 } from '../core/runtime/platform';
 import { AppView, useAppStore } from '../store/useAppStore';
-import { PWAInstallButton } from './PWAInstallButton';
 
 interface UpdateProgressEvent {
   status: string;
@@ -239,14 +238,12 @@ export const TopBar: React.FC = () => {
           )}
         </nav>
 
-        {/* Zone 3: 1 Primary Action + Install Button */}
-        <div className="flex items-center gap-3 shrink-0">
-          <PWAInstallButton />
-
+        {/* Zone 3: Mobile menu button */}
+        <div className="flex items-center gap-3 shrink-0 md:hidden">
           {currentView !== 'recording' && (
             <button
               onClick={() => setView('home')}
-              className="md:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
               onClickCapture={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Menú"
             >

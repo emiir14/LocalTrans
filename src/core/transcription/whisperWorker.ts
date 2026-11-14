@@ -1,4 +1,5 @@
 import { pipeline, env } from '@huggingface/transformers';
+import { MonotonicModelProgressTracker } from './progressTracker';
 
 // Configure environment for local browser execution
 env.allowLocalModels = false;
@@ -228,17 +229,32 @@ self.onmessage = async (event: MessageEvent) => {
       case 'init': {
         const { modelId, device, dtype } = payload;
         currentModelId = modelId;
+        const progressTracker = new MonotonicModelProgressTracker();
+        let lastEmittedPct = -1;
 
         const loaded = await loadPipelineWithFallback(
           modelId,
           device || 'wasm',
           dtype || 'q4',
           (p: any) => {
+            const aggPct = progressTracker.update({
+              status: p.status,
+              file: p.file,
+              progress: p.progress,
+              loaded: p.loaded,
+              total: p.total,
+            });
+            if (p.status === 'progress' && aggPct === lastEmittedPct) {
+              return;
+            }
+            if (p.status === 'progress') {
+              lastEmittedPct = aggPct;
+            }
             self.postMessage({
               type: 'load_progress',
               payload: {
                 status: p.status,
-                progress: typeof p.progress === 'number' ? Math.round(p.progress) : 0,
+                progress: aggPct,
                 file: p.file,
                 loaded: p.loaded,
                 total: p.total,

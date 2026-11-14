@@ -121,17 +121,19 @@ export class TranscriptionPipeline {
         modelDownloadProgress: 0,
       });
 
+      let maxModelPct = 0;
       await this.engine.load(tier, (p) => {
         if (p.status === 'progress' && typeof p.progress === 'number') {
+          maxModelPct = Math.max(maxModelPct, Math.min(100, Math.round(p.progress)));
           onProgress?.({
             sessionId,
-            percent: 15 + Math.round((p.progress / 100) * 15),
+            percent: 15 + Math.round((maxModelPct / 100) * 15),
             currentSegment: 0,
             totalSegments: speechSegments.length,
             estimatedRemainingSec: 0,
-            statusText: `Descargando componentes del modelo (${Math.round(p.progress)}%)...`,
+            statusText: `Descargando componentes del modelo (${maxModelPct}%)...`,
             isDownloadingModel: true,
-            modelDownloadProgress: Math.round(p.progress),
+            modelDownloadProgress: maxModelPct,
           });
         }
       });

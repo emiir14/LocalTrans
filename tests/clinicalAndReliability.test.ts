@@ -175,4 +175,18 @@ describe('Clinical FDI Parser & Structured Note Builder', () => {
     expect(clean).toBe('¿En qué cofre está la cosa?\n\nOdontólogo: Acá en el tercero.');
     expect(clean).not.toContain('[00:03');
   });
+
+  it('aggregates concurrent model file progress monotonically without backwards flicker', async () => {
+    const { MonotonicModelProgressTracker } = await import('../src/core/transcription/progressTracker');
+    const tracker = new MonotonicModelProgressTracker();
+
+    const p1 = tracker.update({ status: 'progress', file: 'encoder.onnx', loaded: 4, total: 100, progress: 4 });
+    const p2 = tracker.update({ status: 'progress', file: 'decoder.onnx', loaded: 3, total: 100, progress: 3 });
+    const p3 = tracker.update({ status: 'progress', file: 'encoder.onnx', loaded: 5, total: 100, progress: 5 });
+    const p4 = tracker.update({ status: 'progress', file: 'decoder.onnx', loaded: 3, total: 100, progress: 3 });
+    const p5 = tracker.update({ status: 'done', file: 'encoder.onnx', loaded: 100, total: 100, progress: 100 });
+    const p6 = tracker.update({ status: 'done', file: 'decoder.onnx', loaded: 100, total: 100, progress: 100 });
+
+    expect([p1, p2, p3, p4, p5, p6]).toEqual([4, 4, 4, 4, 52, 100]);
+  });
 });

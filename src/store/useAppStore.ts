@@ -986,7 +986,10 @@ export const useAppStore = create<AppState>((set, get) => ({
       const engine = getSharedWhisperEngine();
       await engine.load(tier, (p: ProgressCallbackData) => {
         if (p.status === 'progress' && typeof p.progress === 'number') {
-          set({ modelDownloadProgress: Math.round(p.progress) });
+          const nextPct = Math.min(100, Math.round(p.progress));
+          set((state) => ({
+            modelDownloadProgress: Math.max(state.modelDownloadProgress, nextPct),
+          }));
         }
       });
       await get().refreshModelCacheStatuses();
