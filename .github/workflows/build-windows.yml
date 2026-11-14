@@ -7,13 +7,13 @@ on:
   workflow_dispatch:
     inputs:
       publish_release:
-        description: 'Publicar en GitHub Releases (habilita el botón de descarga en tu web)'
+        description: 'Publicar en GitHub Releases (habilita el botón de descarga y actualizaciones)'
         type: boolean
         default: true
       release_tag:
-        description: 'Versión del Release (cambiá a v1.0.1 en futuras actualizaciones)'
+        description: 'Versión del Release (ej. v1.0.1)'
         type: string
-        default: 'v1.0.0'
+        default: 'v1.0.1'
 
 permissions:
   contents: write
@@ -70,7 +70,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path "D:\t" | Out-Null
           npx --yes @tauri-apps/cli@2 build --bundles nsis
 
-      - name: Rename installer to canonical Escriba-Setup.exe
+      - name: Stage unsigned Escriba-Setup.exe
         shell: pwsh
         run: |
           $nsisDir = "D:\t\release\bundle\nsis"
@@ -81,7 +81,49 @@ jobs:
           Copy-Item $exe.FullName "$outDir\Escriba-Setup.exe" -Force
           Get-FileHash "$outDir\Escriba-Setup.exe" -Algorithm SHA256 | Out-File "$outDir\Escriba-Setup.exe.sha256"
 
-      - name: Upload Windows installer artifact
+      - name: Upload unsigned installer artifact for SignPath
+        id: upload_unsigned
+        uses: actions/upload-artifact@v4
+        with:
+          name: escriba-windows-unsigned
+          path: release-artifacts/Escriba-Setup.exe
+
+      - name: Check SignPath Foundation configuration
+        id: signpath_check
+        shell: pwsh
+        env:
+          SIGNPATH_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+          SIGNPATH_ORG: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+        run: |
+          if ($env:SIGNPATH_TOKEN -and $env:SIGNPATH_ORG) {
+            "enabled=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          } else {
+            Write-Host "SignPath Foundation aún no configurado (faltan SIGNPATH_API_TOKEN o SIGNPATH_ORGANIZATION_ID). Se publicará el instalador sin firma Authenticode hasta configurarlo."
+            "enabled=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          }
+
+      - name: Submit signing request to SignPath Foundation
+        if: steps.signpath_check.outputs.enabled == 'true'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'escriba' }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG || 'release-signing' }}
+          github-artifact-id: ${{ steps.upload_unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: signed-artifacts
+
+      - name: Promote signed installer if SignPath ran
+        if: steps.signpath_check.outputs.enabled == 'true'
+        shell: pwsh
+        run: |
+          $signedExe = Get-ChildItem -Path "signed-artifacts" -Filter "*.exe" -Recurse | Select-Object -First 1
+          if (-not $signedExe) { throw "SignPath finished without an .exe in signed-artifacts" }
+          Copy-Item $signedExe.FullName "release-artifacts\Escriba-Setup.exe" -Force
+          Get-FileHash "release-artifacts\Escriba-Setup.exe" -Algorithm SHA256 | Out-File "release-artifacts\Escriba-Setup.exe.sha256"
+
+      - name: Upload final Windows installer artifact
         uses: actions/upload-artifact@v4
         with:
           name: escriba-windows-exe

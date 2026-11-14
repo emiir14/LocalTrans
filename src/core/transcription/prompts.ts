@@ -7,10 +7,10 @@ import { TranscriptionMode } from '../types';
  */
 
 export const CLINICAL_WHISPER_INITIAL_PROMPT =
-  'Consulta odontológica en español rioplatense. Odontólogo dictando hallazgos, diagnóstico y tratamiento. Piezas FDI 1.1 a 4.8. Términos: conductometría, endodoncia, amalgama, composite, carillas, resina, oclusal, mesial, distal, vestibular, palatino, lingual, periodonto, periapical, gutapercha, tartrectomía, exodoncia, implante, corona, prótesis, anestesia, mepivacaína, lidocaína, bruxismo, caries.';
+  'Conversación clínica odontológica en español rioplatense. Buen día, revisamos la pieza 36, evaluamos caries oclusal, endodoncia o composite y registramos las indicaciones.';
 
 export const GENERAL_WHISPER_INITIAL_PROMPT =
-  'Conversación espontánea en español rioplatense con modismos argentinos, charlas cotidianas, juegos, trabajo o reuniones. Transcripción fiel palabra por palabra con puntuación natural.';
+  'Conversación natural en español rioplatense con palabras claras y puntuación correcta.';
 
 /**
  * Builds a bounded prompt combining domain context with the tail of the previous segment

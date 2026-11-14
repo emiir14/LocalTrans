@@ -241,7 +241,7 @@ export class TranscriptionPipeline {
           currentSegment: overallCompleted + 1,
           totalSegments,
           estimatedRemainingSec,
-          statusText: `Transcribiendo fragmento ${overallCompleted + 1} de ${totalSegments} (${segTimeRange})...`,
+          statusText: `Transcribiendo fragmento ${overallCompleted + 1} de ${totalSegments}...`,
           isDownloadingModel: false,
           currentSegmentTime: segTimeRange,
           lastTranscribedText: previousText || undefined,

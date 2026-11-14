@@ -17,6 +17,8 @@ import {
   CheckCircle2,
   CloudDownload,
 } from 'lucide-react';
+import { getDefaultModelTier, getTauriBridge, isTauriDesktop } from '../core/runtime/platform';
+import { NativeCapabilitiesResponse } from '../core/transcription/tauriEngine';
 import { detectHardwareCapabilities, HardwareCapabilities } from '../core/transcription/tierDetector';
 import { ModelTier } from '../core/types';
 import { useAppStore } from '../store/useAppStore';
@@ -44,7 +46,9 @@ export const SettingsView: React.FC = () => {
     importGlossaryBackup,
   } = useAppStore();
 
+  const runningDesktop = isTauriDesktop();
   const [hardware, setHardware] = useState<HardwareCapabilities | null>(null);
+  const [nativeCaps, setNativeCaps] = useState<NativeCapabilitiesResponse | null>(null);
   const [newIncorrect, setNewIncorrect] = useState('');
   const [newCorrect, setNewCorrect] = useState('');
   const [isAddingGlossary, setIsAddingGlossary] = useState(false);
@@ -73,6 +77,13 @@ export const SettingsView: React.FC = () => {
 
   useEffect(() => {
     detectHardwareCapabilities().then(setHardware);
+    if (runningDesktop) {
+      const bridge = getTauriBridge();
+      bridge?.core
+        .invoke<NativeCapabilitiesResponse>('get_native_capabilities')
+        .then(setNativeCaps)
+        .catch(() => {});
+    }
     loadAudioDevices();
 
     const handleDeviceChange = () => {
@@ -290,7 +301,17 @@ export const SettingsView: React.FC = () => {
           </div>
         </div>
 
-        {hardware && (
+        {runningDesktop && nativeCaps ? (
+          <div className="p-3.5 rounded-2xl bg-teal-50/70 dark:bg-teal-950/30 border border-teal-200/70 dark:border-teal-800/60 text-xs text-slate-700 dark:text-slate-200 space-y-1">
+            <div className="font-semibold text-teal-900 dark:text-teal-200">
+              Motor nativo detectado en Windows (.exe):
+            </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-teal-800 dark:text-teal-300">
+              <span>Aceleración: {nativeCaps.backendLabel}</span>
+              <span>Hilos de CPU: {nativeCaps.cpuThreads}</span>
+            </div>
+          </div>
+        ) : hardware ? (
           <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-xs text-slate-600 dark:text-slate-300 space-y-1">
             <div className="font-semibold text-slate-800 dark:text-slate-200">
               Hardware detectado en tu navegador:
@@ -309,26 +330,36 @@ export const SettingsView: React.FC = () => {
               <span>Hilos de CPU: {hardware.hardwareConcurrency}</span>
             </div>
           </div>
-        )}
+        ) : null}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
           {[
             {
               id: 'balanced' as const,
-              label: 'Estándar clínico (whisper-small) — Recomendado',
-              desc: 'Modelo de 244M parámetros (~140 MB). Balance óptimo entre velocidad y precisión terminológica para móviles y PCs.',
+              label: runningDesktop
+                ? 'Estándar clínico (whisper-small)'
+                : 'Estándar clínico (whisper-small) — Recomendado',
+              desc: runningDesktop
+                ? 'Modelo GGML q8_0 (~190 MB). Ultra rápido para equipos sin GPU dedicada o consultas breves.'
+                : 'Modelo de 244M parámetros (~240 MB, q8). Mejor ortografía y precisión en español para móviles y PCs.',
             },
             {
               id: 'max' as const,
-              label: 'Máxima resolución (whisper-large-v3-turbo)',
-              desc: 'Modelo de 800M parámetros (~480 MB, decodificador q8). Máxima fidelidad acústica para consultas extensas o hardware potente.',
+              label: runningDesktop
+                ? 'Máxima resolución (whisper-large-v3-turbo) — Recomendado'
+                : 'Máxima resolución (whisper-large-v3-turbo)',
+              desc: runningDesktop
+                ? 'Modelo GGML q5_0 (~574 MB). Máxima fidelidad clínica para Windows con GPU Vulkan o CPU multinúcleo.'
+                : 'Modelo de 800M parámetros (~480 MB, decodificador q8). Máxima fidelidad acústica para consultas extensas o hardware potente.',
             },
           ].map((tier) => {
-            const currentTier = settings?.modelTier || 'balanced';
+            const currentTier = settings?.modelTier || getDefaultModelTier();
             const isSelected =
               tier.id === 'balanced'
-                ? currentTier === 'balanced' || currentTier === 'auto'
-                : currentTier === 'max';
+                ? currentTier === 'balanced' ||
+                  currentTier === 'fast' ||
+                  (currentTier === 'auto' && !runningDesktop)
+                : currentTier === 'max' || (currentTier === 'auto' && runningDesktop);
             const cacheInfo = modelCacheStatuses[tier.id];
             const isDownloadingThis = downloadingModelTier === tier.id;
 

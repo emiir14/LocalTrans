@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Download, Smartphone } from 'lucide-react';
 
+import { isNativeMobileApp, isTauriDesktop } from '../core/runtime/platform';
+
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
@@ -43,7 +45,7 @@ export const PWAInstallButton: React.FC = () => {
     };
   }, []);
 
-  if (isInstalled) {
+  if (isInstalled || isTauriDesktop() || isNativeMobileApp()) {
     return null;
   }
 

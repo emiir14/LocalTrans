@@ -28,7 +28,7 @@ function float32ToBase64(samples: Float32Array): string {
  * Implements the exact same ITranscriptionEngine interface as the browser worker.
  */
 export class TauriWhisperEngine implements ITranscriptionEngine {
-  private activeTier: ModelTier = 'balanced';
+  private activeTier: ModelTier = 'max';
   private loaded = false;
   private gpuActive = true;
   private taskQueue: Promise<unknown> = Promise.resolve();
@@ -57,7 +57,7 @@ export class TauriWhisperEngine implements ITranscriptionEngine {
   }
 
   public async load(
-    tier: ModelTier = 'auto',
+    tier: ModelTier = 'max',
     onProgress?: (data: ProgressCallbackData) => void
   ): Promise<void> {
     return this.enqueueTask(async () => {
@@ -67,7 +67,7 @@ export class TauriWhisperEngine implements ITranscriptionEngine {
       }
 
       const resolvedTier: Exclude<ModelTier, 'auto' | 'fast'> =
-        tier === 'max' ? 'max' : 'balanced';
+        tier === 'balanced' || tier === 'fast' ? 'balanced' : 'max';
 
       if (this.loaded && this.activeTier === resolvedTier) {
         return;

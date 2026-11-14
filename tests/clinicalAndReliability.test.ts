@@ -142,7 +142,8 @@ describe('Clinical FDI Parser & Structured Note Builder', () => {
     expect(generalPrompt.toLowerCase()).not.toContain('conductometría');
 
     const dentalPrompt = buildSegmentPrompt('dental', 'Pieza 3.6 con caries profunda.');
-    expect(dentalPrompt).toContain('conductometría');
+    expect(dentalPrompt).toContain('odontológica');
+    expect(dentalPrompt).toContain('endodoncia');
     expect(dentalPrompt).toContain('Pieza 3.6 con caries profunda.');
 
     const clean = ExportFormatter.toCleanPlainText([

@@ -18,6 +18,7 @@ import { getSharedWhisperEngine, ProgressCallbackData } from '../core/transcript
 import { checkModelCacheStatus, ModelCacheStatus } from '../core/transcription/modelCache';
 import { PipelineProgress, TranscriptionPipeline } from '../core/transcription/pipeline';
 import { buildSegmentPrompt } from '../core/transcription/prompts';
+import { getDefaultModelTier, shouldShowDownloadsTab } from '../core/runtime/platform';
 import { ClinicalAudioSegmenter } from '../core/transcription/vad';
 import {
   AppSettings,
@@ -100,7 +101,7 @@ class BackgroundChunkTranscriber {
       const engine = getSharedWhisperEngine();
       if (!engine.isReady()) {
         const currentSettings = useAppStore.getState().settings;
-        await engine.load(currentSettings?.modelTier || 'balanced');
+        await engine.load(currentSettings?.modelTier || getDefaultModelTier());
       }
 
       const int16 = new Int16Array(chunk.pcmData);
@@ -354,23 +355,25 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     if (typeof window !== 'undefined') {
       setTimeout(() => {
-        getSharedWhisperEngine().load(sets.modelTier || 'balanced').catch(() => {});
+        getSharedWhisperEngine().load(sets.modelTier || getDefaultModelTier()).catch(() => {});
       }, 1500);
     }
   },
 
   setView: (view: AppView, sessionId?: string) => {
+    const safeView: AppView =
+      view === 'downloads' && !shouldShowDownloadsTab() ? 'home' : view;
     set({
-      currentView: view,
+      currentView: safeView,
       currentSessionId: sessionId || null,
     });
-    if (view === 'detail' && sessionId) {
+    if (safeView === 'detail' && sessionId) {
       get().loadSessionDetail(sessionId);
     }
-    if (view === 'home') {
+    if (safeView === 'home') {
       get().loadSessions();
     }
-    if (view === 'settings') {
+    if (safeView === 'settings') {
       get().refreshModelCacheStatuses();
     }
   },

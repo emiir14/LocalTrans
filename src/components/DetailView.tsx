@@ -85,8 +85,6 @@ export const DetailView: React.FC = () => {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
   const [rightTab, setRightTab] = useState<'transcript' | 'clinical_note'>('transcript');
-  const [showTimestamps, setShowTimestamps] = useState(true);
-  const [highlightFdi, setHighlightFdi] = useState(true);
   const [autoScroll, setAutoScroll] = useState(true);
   const [transcriptSearch, setTranscriptSearch] = useState('');
   const [editingSegmentId, setEditingSegmentId] = useState<string | null>(null);
@@ -371,7 +369,7 @@ export const DetailView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5 lg:h-full lg:flex lg:flex-col lg:overflow-hidden print:h-auto print:overflow-visible">
       {/* Hidden Audio Player Element */}
       {audioUrl && (
         <audio
@@ -437,9 +435,6 @@ export const DetailView: React.FC = () => {
           <h2 className="text-sm font-bold uppercase tracking-wide">Transcripción de la consulta</h2>
           {activeTranscript.map((seg) => (
             <div key={seg.id} className="text-xs leading-relaxed border-b border-slate-100 pb-2">
-              <span className="font-mono text-slate-500 mr-2">
-                [{formatTimeDisplay(seg.start)}]
-              </span>
               {seg.speaker && <strong className="mr-1.5">{seg.speaker}:</strong>}
               <span>{seg.text}</span>
             </div>
@@ -448,7 +443,7 @@ export const DetailView: React.FC = () => {
       </div>
 
       {/* Top Navigation & Session Header */}
-      <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-slate-800/80">
+      <div className="no-print shrink-0 relative z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-slate-800/80">
         <div className="flex items-start sm:items-center gap-3 min-w-0">
           <button
             onClick={() => setView('home')}
@@ -630,16 +625,16 @@ export const DetailView: React.FC = () => {
 
       {/* Fallback Notice */}
       {transcriptionFallbackNotice && (
-        <div className="no-print p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 flex items-center gap-2.5">
+        <div className="no-print shrink-0 p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 flex items-center gap-2.5">
           <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
           <span>{transcriptionFallbackNotice}</span>
         </div>
       )}
 
       {/* Main 2-Column Responsive Layout */}
-      <div className="no-print grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="no-print grid grid-cols-1 lg:grid-cols-12 gap-8 items-start lg:flex-1 lg:min-h-0 lg:items-stretch">
         {/* Left Column: Audio Player & Action Controls */}
-        <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-6 self-start">
+        <div className="lg:col-span-5 space-y-5 lg:h-full lg:overflow-y-auto lg:pr-1 scrollbar-thin">
           {/* Synchronized Audio Player Card */}
           {!activeSession.audioDeleted && audioUrl ? (
             <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-4">
@@ -804,7 +799,7 @@ export const DetailView: React.FC = () => {
                     </div>
 
                     <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
-                      <span>{transcriptionProgress?.currentSegmentTime ? `Intervalo: ${transcriptionProgress.currentSegmentTime}` : 'Analizando voz...'}</span>
+                      <span>Analizando fragmento de voz...</span>
                       <span>Restan: {formatRemainingTime(transcriptionProgress?.estimatedRemainingSec || 0)}</span>
                     </div>
                   </div>
@@ -972,9 +967,9 @@ export const DetailView: React.FC = () => {
         </div>
 
         {/* Right Column: Transcript OR Structured Clinical Sheet */}
-        <div className="lg:col-span-7 space-y-4">
+        <div className="lg:col-span-7 flex flex-col gap-4 lg:h-full lg:min-h-0">
           {/* Mode Switcher + Detected FDI Teeth strip */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-900/80 rounded-xl border border-slate-200/60 dark:border-slate-800/60 self-start">
               <button
                 type="button"
@@ -1013,7 +1008,7 @@ export const DetailView: React.FC = () => {
           </div>
 
           {rightTab === 'clinical_note' ? (
-            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs p-5 sm:p-6 space-y-5">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs p-5 sm:p-6 space-y-5 lg:flex-1 lg:min-h-0 lg:overflow-y-auto scrollbar-thin">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
                 <div>
                   <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
@@ -1177,7 +1172,7 @@ export const DetailView: React.FC = () => {
           ) : (
             <>
               {/* Transcript Control Bar */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
+              <div className="shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
                 <div className="relative flex-1">
                   <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
@@ -1189,8 +1184,8 @@ export const DetailView: React.FC = () => {
                   />
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  {isTranscribingThisSession && (
+                {isTranscribingThisSession && (
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
                       onClick={() => setAutoScroll(!autoScroll)}
@@ -1203,32 +1198,12 @@ export const DetailView: React.FC = () => {
                       <span className={`w-1.5 h-1.5 rounded-full ${autoScroll ? 'bg-teal-500 animate-ping' : 'bg-slate-400'}`} />
                       <span>Auto-scroll</span>
                     </button>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => setHighlightFdi(!highlightFdi)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors min-h-[36px] ${
-                      highlightFdi
-                        ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800/60'
-                        : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    {highlightFdi ? 'Piezas FDI: Sí' : 'Piezas FDI: No'}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowTimestamps(!showTimestamps)}
-                    className="px-3 py-1.5 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap transition-colors min-h-[36px]"
-                  >
-                    {showTimestamps ? 'Ocultar tiempos' : 'Mostrar tiempos'}
-                  </button>
-                </div>
+                  </div>
+                )}
               </div>
 
               {/* Transcript Feed */}
-              <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs p-4 sm:p-6 min-h-[400px]">
+              <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs p-4 sm:p-6 min-h-[320px] lg:flex-1 lg:min-h-0 lg:overflow-y-auto scrollbar-thin">
                 {filteredSegments.length > 0 ? (
                   <div className="space-y-3">
                     {filteredSegments.map((segment, index) => {
@@ -1249,13 +1224,8 @@ export const DetailView: React.FC = () => {
                           } ${audioUrl ? 'cursor-pointer' : ''}`}
                         >
                           <div className="flex flex-wrap items-center justify-between gap-2">
-                            {/* Timestamp & Metadata */}
-                            <div className="flex flex-wrap items-center gap-2 text-xs font-mono tabular-nums text-slate-400 dark:text-slate-500">
-                              {showTimestamps && (
-                                <span>
-                                  {formatTimeDisplay(segment.start)} - {formatTimeDisplay(segment.end)}
-                                </span>
-                              )}
+                            {/* Metadata */}
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
                               {segment.speaker && (
                                 <span
                                   className={`font-sans font-semibold ${
@@ -1266,22 +1236,24 @@ export const DetailView: React.FC = () => {
                                       : 'text-teal-700 dark:text-teal-400'
                                   }`}
                                 >
-                                  · {segment.speaker}
+                                  {segment.speaker}
                                 </span>
                               )}
                               {segment.edited && (
-                                <span className="font-sans text-[11px] text-slate-400">· editado</span>
+                                <span className="font-sans text-[11px] text-slate-400">
+                                  {segment.speaker ? '· editado' : 'editado'}
+                                </span>
                               )}
                               {isLatestStreaming && (
                                 <span className="font-sans text-[11px] font-medium text-teal-700 dark:text-teal-300">
-                                  · Reciente
+                                  {segment.speaker || segment.edited ? '· Reciente' : 'Reciente'}
                                 </span>
                               )}
                             </div>
 
                             {/* Always-accessible Touch Actions: Speaker Role + Edit */}
                             {!isEditing && (
-                              <div className="flex items-center gap-1 opacity-100 sm:opacity-75 sm:group-hover:opacity-100 transition-opacity">
+                              <div className="flex items-center gap-1 ml-auto opacity-100 sm:opacity-75 sm:group-hover:opacity-100 transition-opacity">
                                 <button
                                   type="button"
                                   onClick={(e) => {
@@ -1335,7 +1307,7 @@ export const DetailView: React.FC = () => {
                             </div>
                           ) : (
                             <p className="mt-1.5 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed">
-                              {renderFormattedSegmentText(segment.text, transcriptSearch, highlightFdi)}
+                              {renderFormattedSegmentText(segment.text, transcriptSearch)}
                             </p>
                           )}
                         </div>
@@ -1352,11 +1324,6 @@ export const DetailView: React.FC = () => {
                             <span className="text-xs font-bold text-teal-900 dark:text-teal-200">
                               Procesando siguiente bloque de voz...
                             </span>
-                            {transcriptionProgress?.currentSegmentTime && (
-                              <span className="text-[10px] font-mono text-teal-700 dark:text-teal-400">
-                                ({transcriptionProgress.currentSegmentTime})
-                              </span>
-                            )}
                           </div>
                           <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
                             {transcriptionProgress?.lastTranscribedText
@@ -1409,41 +1376,19 @@ export const DetailView: React.FC = () => {
   );
 };
 
-// Highlights both search terms and clinical FDI dental codes (e.g. 1.6, pieza 36)
-function renderFormattedSegmentText(text: string, search: string, highlightFdi: boolean) {
-  if (search.trim()) {
-    const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
-    return parts.map((part, i) =>
-      part.toLowerCase() === search.toLowerCase() ? (
-        <mark key={i} className="bg-amber-200 dark:bg-amber-900/60 text-slate-900 dark:text-slate-100 px-0.5 rounded">
-          {part}
-        </mark>
-      ) : (
-        part
-      )
-    );
-  }
+// Highlights search terms cleanly within transcript text
+function renderFormattedSegmentText(text: string, search: string) {
+  if (!search.trim()) return text;
 
-  if (!highlightFdi) return text;
-
-  const fdiPattern =
-    /(\b(?:pieza|piezas|elemento|elementos|diente|dientes|molar|premolar|incisivo|canino|implante|conducto|corona|raíz|raiz)\s+(?:n[°º.]?\s*)?[1-8]\.?[1-8]|(?<!\d)[1-4]\.[1-8](?!\d))/gi;
-  const parts = text.split(fdiPattern);
-  return parts.map((part, idx) => {
-    if (!part) return null;
-    if (fdiPattern.test(part)) {
-      fdiPattern.lastIndex = 0;
-      return (
-        <span
-          key={idx}
-          className="font-semibold text-teal-700 dark:text-teal-300 underline decoration-teal-400/60 decoration-dotted underline-offset-2"
-        >
-          {part}
-        </span>
-      );
-    }
-    fdiPattern.lastIndex = 0;
-    return part;
-  });
+  const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+  return parts.map((part, i) =>
+    part.toLowerCase() === search.toLowerCase() ? (
+      <mark key={i} className="bg-amber-200 dark:bg-amber-900/60 text-slate-900 dark:text-slate-100 px-0.5 rounded">
+        {part}
+      </mark>
+    ) : (
+      part
+    )
+  );
 }

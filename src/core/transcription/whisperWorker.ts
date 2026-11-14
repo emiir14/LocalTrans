@@ -166,8 +166,6 @@ async function runWhisperInference(
     temperature: 0.0,
     num_beams: numBeams,
     max_new_tokens: 384,
-    repetition_penalty: 1.1,
-    no_repeat_ngram_size: 4,
   };
 
   const promptedInitTokens = buildPromptedInitTokens(instance, language, initialPrompt);
@@ -194,8 +192,6 @@ async function runWhisperInference(
         temperature: 0.0,
         num_beams: numBeams,
         max_new_tokens: safeMaxNewTokens,
-        repetition_penalty: 1.1,
-        no_repeat_ngram_size: 4,
         decoder_input_ids: promptedInitTokens,
       });
 

@@ -1,10 +1,10 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Default capability for Escriba desktop window",
+  "description": "Default cross-platform capability for Escriba",
   "windows": ["main"],
   "permissions": [
     "core:default",
-    "process:allow-restart"
+    "opener:default"
   ]
 }

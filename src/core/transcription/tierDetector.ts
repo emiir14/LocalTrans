@@ -26,10 +26,10 @@ export const TIER_CONFIGS: Record<Exclude<ModelTier, 'auto'>, ModelTierConfig> =
     tier: 'balanced',
     modelId: 'onnx-community/whisper-small',
     label: 'Alta precisión clínica (whisper-small)',
-    description: 'Estándar clínico de alta fidelidad (~140 MB). 244 millones de parámetros para captar terminología técnica con exactitud.',
+    description: 'Estándar clínico de alta fidelidad (~240 MB, q8). 244 millones de parámetros para captar español y terminología técnica con exactitud.',
     defaultBackend: 'webgpu',
-    dtype: 'q4',
-    estimatedDownloadMb: 140,
+    dtype: 'q8',
+    estimatedDownloadMb: 240,
   },
   max: {
     tier: 'max',
@@ -48,10 +48,10 @@ export const TIER_CONFIGS: Record<Exclude<ModelTier, 'auto'>, ModelTierConfig> =
     tier: 'balanced',
     modelId: 'onnx-community/whisper-small',
     label: 'Alta precisión clínica (whisper-small)',
-    description: 'Estándar clínico de alta fidelidad (~140 MB).',
+    description: 'Estándar clínico de alta fidelidad (~240 MB, q8).',
     defaultBackend: 'webgpu',
-    dtype: 'q4',
-    estimatedDownloadMb: 140,
+    dtype: 'q8',
+    estimatedDownloadMb: 240,
   },
 };
 

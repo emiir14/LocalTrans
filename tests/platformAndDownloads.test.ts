@@ -1,10 +1,18 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  APP_VERSION,
+  compareVersions,
   DEFAULT_GITHUB_REPO,
   getConfiguredGithubRepo,
+  getDefaultModelTier,
   getTauriBridge,
+  isAndroidDevice,
+  isNativeMobileApp,
+  isNewerVersion,
   isTauriDesktop,
+  isTauriMobileAndroid,
   normalizeRepoSlug,
+  shouldShowDownloadsTab,
 } from '../src/core/runtime/platform';
 import { checkModelCacheStatus } from '../src/core/transcription/modelCache';
 import { TauriWhisperEngine } from '../src/core/transcription/tauriEngine';
@@ -27,21 +35,76 @@ describe('Platform & Desktop Runtime Bridge', () => {
     expect(normalizeRepoSlug('   ')).toBe('');
   });
 
-  it('detects standard web environment cleanly when __TAURI__ is absent', () => {
-    expect(getTauriBridge()).toBeNull();
-    expect(isTauriDesktop()).toBe(false);
+  it('compares semantic versions and release tags accurately', () => {
+    expect(APP_VERSION).toBe('1.0.1');
+    expect(compareVersions('v1.0.2', '1.0.1')).toBe(1);
+    expect(compareVersions('1.0.1', 'v1.0.1')).toBe(0);
+    expect(compareVersions('v1.0.0', '1.0.1')).toBe(-1);
+    expect(isNewerVersion('v1.0.2', '1.0.1')).toBe(true);
+    expect(isNewerVersion('v1.0.1', '1.0.1')).toBe(false);
+    expect(isNewerVersion('v1.1.0-beta.1', '1.0.9')).toBe(true);
   });
 
-  it('detects Tauri desktop environment when __TAURI__.core.invoke is injected', () => {
+  it('detects standard web environment cleanly when __TAURI__ and mobile wrappers are absent', () => {
+    expect(getTauriBridge()).toBeNull();
+    expect(isTauriDesktop()).toBe(false);
+    expect(isTauriMobileAndroid()).toBe(false);
+    expect(isNativeMobileApp()).toBe(false);
+    expect(shouldShowDownloadsTab()).toBe(true);
+    expect(getDefaultModelTier()).toBe('balanced');
+  });
+
+  it('hides Downloads tab and defaults to max model tier inside Windows .exe', () => {
     const mockInvoke = vi.fn();
     vi.stubGlobal('window', {
       __TAURI__: {
         core: { invoke: mockInvoke },
       },
     });
+    vi.stubGlobal('navigator', {
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Edg/130.0.0.0',
+    });
 
+    expect(isAndroidDevice()).toBe(false);
     expect(isTauriDesktop()).toBe(true);
+    expect(isTauriMobileAndroid()).toBe(false);
     expect(getTauriBridge()?.core.invoke).toBe(mockInvoke);
+    expect(shouldShowDownloadsTab()).toBe(false);
+    expect(getDefaultModelTier()).toBe('max');
+  });
+
+  it('distinguishes Tauri Android APK from Windows Desktop and defaults Android APK to balanced tier', () => {
+    const mockInvoke = vi.fn();
+    vi.stubGlobal('window', {
+      __TAURI__: {
+        core: { invoke: mockInvoke },
+      },
+    });
+    vi.stubGlobal('navigator', {
+      userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8; wv) AppleWebKit/537.36 Chrome/126.0.0.0 Mobile Safari/537.36',
+    });
+
+    expect(isAndroidDevice()).toBe(true);
+    expect(isTauriDesktop()).toBe(false);
+    expect(isTauriMobileAndroid()).toBe(true);
+    expect(isNativeMobileApp()).toBe(true);
+    expect(shouldShowDownloadsTab()).toBe(false);
+    expect(getDefaultModelTier()).toBe('balanced');
+  });
+
+  it('hides Downloads tab inside other native Android .apk wrappers (Capacitor / Cordova / WebView)', () => {
+    vi.stubGlobal('window', {
+      Capacitor: { isNativePlatform: () => true, getPlatform: () => 'android' },
+    });
+    expect(isNativeMobileApp()).toBe(true);
+    expect(shouldShowDownloadsTab()).toBe(false);
+
+    vi.stubGlobal('window', {});
+    vi.stubGlobal('navigator', {
+      userAgent: 'Mozilla/5.0 (Linux; Android 13; Pixel 7 Build/TQ3A; wv) AppleWebKit/537.36 Version/4.0 Chrome/120.0.0.0 Mobile Safari/537.36',
+    });
+    expect(isNativeMobileApp()).toBe(true);
+    expect(shouldShowDownloadsTab()).toBe(false);
   });
 
   it('delegates model cache check to native command inside Windows .exe', async () => {
@@ -56,6 +119,9 @@ describe('Platform & Desktop Runtime Bridge', () => {
         core: { invoke: mockInvoke },
       },
     });
+    vi.stubGlobal('navigator', {
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+    });
 
     const status = await checkModelCacheStatus('max');
     expect(mockInvoke).toHaveBeenCalledWith('check_native_model_status', { tier: 'max' });
@@ -64,7 +130,7 @@ describe('Platform & Desktop Runtime Bridge', () => {
     expect(status.cachedBytes).toBe(574000000);
   });
 
-  it('loads and transcribes Float32 PCM segments via TauriWhisperEngine', async () => {
+  it('defaults TauriWhisperEngine auto tier to max and transcribes Float32 PCM segments', async () => {
     const unlistenSpy = vi.fn();
     const mockListen = vi.fn().mockResolvedValue(unlistenSpy);
     const mockInvoke = vi.fn(async (cmd: string) => {
@@ -73,8 +139,8 @@ describe('Platform & Desktop Runtime Bridge', () => {
           runtime: 'windows-exe',
           engine: 'whisper.cpp',
           gpuActive: true,
-          backendLabel: 'Vulkan GPU Nativo (whisper.cpp)',
-          cpuThreads: 8,
+          backendLabel: 'Vulkan GPU: NVIDIA RTX (whisper.cpp)',
+          cpuThreads: 12,
           modelsDir: 'C:\\Users\\Demo\\AppData\\Local\\com.escriba.app\\models',
         };
       }
@@ -90,13 +156,18 @@ describe('Platform & Desktop Runtime Bridge', () => {
         event: { listen: mockListen },
       },
     });
+    vi.stubGlobal('navigator', {
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+    });
 
     const engine = new TauriWhisperEngine();
+    expect(engine.getActiveTier()).toBe('max');
     const onProgress = vi.fn();
-    await engine.load('balanced', onProgress);
+    await engine.load('auto', onProgress);
 
     expect(engine.isReady()).toBe(true);
-    expect(engine.getActiveTier()).toBe('balanced');
+    expect(engine.getActiveTier()).toBe('max');
+    expect(mockInvoke).toHaveBeenCalledWith('load_whisper_model', { tier: 'max' });
     expect(engine.getActiveBackend()).toBe('webgpu');
     expect(mockListen).toHaveBeenCalledWith('whisper:download-progress', expect.any(Function));
     expect(unlistenSpy).toHaveBeenCalledTimes(1);

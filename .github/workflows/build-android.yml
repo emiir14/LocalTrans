@@ -1,0 +1,148 @@
+name: Build Escriba Android (.apk)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: 'Publicar Escriba.apk en GitHub Releases'
+        type: boolean
+        default: true
+      release_tag:
+        description: 'Versión del Release (ej. v1.0.1)'
+        type: string
+        default: 'v1.0.1'
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Rust stable with Android ARM64 target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - name: Setup Android SDK & NDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android NDK and Build Tools
+        run: |
+          echo "y" | sdkmanager --install "ndk;27.0.12077973" "build-tools;35.0.0" "platforms;android-35"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> "$GITHUB_ENV"
+
+      - name: Rust & Cargo cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          cache-targets: false
+          prefix-key: android-arm64
+
+      - name: Install web dependencies
+        run: |
+          rm -f package-lock.json
+          npm install --no-audit --no-fund
+
+      - name: Generate Android launcher icons
+        run: npx --yes @tauri-apps/cli@2 icon public/pwa-512x512.png
+
+      - name: Initialize Tauri Android project
+        run: npx --yes @tauri-apps/cli@2 android init --ci
+
+      - name: Configure Android microphone & privacy manifest permissions
+        run: node scripts/patch-android-project.mjs
+
+      - name: Build Android APK (ARM64)
+        run: npx --yes @tauri-apps/cli@2 android build --apk --target aarch64
+
+      - name: Align and sign Escriba.apk
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          mkdir -p release-artifacts
+          RAW_APK=$(find src-tauri/gen/android/app/build/outputs/apk -type f -name "*.apk" | head -n 1)
+          if [ -z "$RAW_APK" ]; then
+            echo "No APK produced under src-tauri/gen/android/app/build/outputs/apk"
+            exit 1
+          fi
+          echo "Found built APK: $RAW_APK"
+
+          BUILD_TOOLS_DIR="$ANDROID_HOME/build-tools/35.0.0"
+          ALIGNED_APK="release-artifacts/Escriba-aligned.apk"
+          FINAL_APK="release-artifacts/Escriba.apk"
+
+          "$BUILD_TOOLS_DIR/zipalign" -f -p 4 "$RAW_APK" "$ALIGNED_APK"
+
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 --decode > /tmp/escriba-release.jks
+            ALIAS="${KEY_ALIAS:-escriba}"
+            KS_PASS="${KEYSTORE_PASS}"
+            K_PASS="${KEY_PASS:-$KEYSTORE_PASS}"
+          else
+            echo "ANDROID_KEYSTORE_BASE64 no configurado; generando firma de distribución temporal para que el APK sea instalable."
+            keytool -genkeypair -v \
+              -keystore /tmp/escriba-release.jks \
+              -alias escriba \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass escriba-local-key -keypass escriba-local-key \
+              -dname "CN=Escriba, OU=Salud, O=Escriba, L=BuenosAires, C=AR"
+            ALIAS="escriba"
+            KS_PASS="escriba-local-key"
+            K_PASS="escriba-local-key"
+          fi
+
+          "$BUILD_TOOLS_DIR/apksigner" sign \
+            --ks /tmp/escriba-release.jks \
+            --ks-key-alias "$ALIAS" \
+            --ks-pass "pass:$KS_PASS" \
+            --key-pass "pass:$K_PASS" \
+            --out "$FINAL_APK" \
+            "$ALIGNED_APK"
+
+          rm -f "$ALIGNED_APK" /tmp/escriba-release.jks
+          sha256sum "$FINAL_APK" > release-artifacts/Escriba.apk.sha256
+
+      - name: Upload Android APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: escriba-android-apk
+          path: |
+            release-artifacts/Escriba.apk
+            release-artifacts/Escriba.apk.sha256
+
+      - name: Publish Escriba.apk to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.publish_release)
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || inputs.release_tag }}
+          target_commitish: ${{ github.sha }}
+          name: Escriba ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || inputs.release_tag }}
+          files: |
+            release-artifacts/Escriba.apk
+            release-artifacts/Escriba.apk.sha256
+          generate_release_notes: true

@@ -41,14 +41,18 @@ struct DownloadProgressPayload {
 pub struct WhisperManager {
     ctx: Arc<Mutex<Option<(String, WhisperContext)>>>,
     gpu_active: Arc<Mutex<bool>>,
+    gpu_name: Arc<Mutex<Option<String>>>,
     is_busy: Arc<Mutex<bool>>,
 }
 
 impl WhisperManager {
     pub fn new() -> Self {
+        let vk_devices = whisper_rs::vulkan::list_devices();
+        let initial_gpu_name = vk_devices.first().map(|d| d.name.trim().to_string()).filter(|s| !s.is_empty());
         Self {
             ctx: Arc::new(Mutex::new(None)),
-            gpu_active: Arc::new(Mutex::new(true)),
+            gpu_active: Arc::new(Mutex::new(!vk_devices.is_empty())),
+            gpu_name: Arc::new(Mutex::new(initial_gpu_name)),
             is_busy: Arc::new(Mutex::new(false)),
         }
     }
@@ -66,7 +70,7 @@ impl WhisperManager {
 
 fn model_spec_for_tier(tier: &str) -> (&'static str, &'static str, &'static str) {
     match tier {
-        "max" => (
+        "max" | "auto" => (
             "max",
             "ggml-large-v3-turbo-q5_0.bin",
             "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin",
@@ -97,19 +101,25 @@ pub fn get_native_capabilities(
 ) -> Result<NativeCapabilities, String> {
     let dir = models_dir(&app)?;
     let gpu_active = *state.gpu_active.lock().unwrap_or_else(|e| e.into_inner());
+    let gpu_name = state.gpu_name.lock().unwrap_or_else(|e| e.into_inner()).clone();
     let threads = std::thread::available_parallelism()
         .map(|n| n.get())
         .unwrap_or(4);
+
+    let backend_label = if gpu_active {
+        match gpu_name {
+            Some(name) if !name.is_empty() => format!("Vulkan GPU: {name} (whisper.cpp)"),
+            _ => "Vulkan GPU Nativo (whisper.cpp)".to_string(),
+        }
+    } else {
+        "CPU Nativo AVX2 Multihilo (whisper.cpp)".to_string()
+    };
 
     Ok(NativeCapabilities {
         runtime: "windows-exe".to_string(),
         engine: "whisper.cpp".to_string(),
         gpu_active,
-        backend_label: if gpu_active {
-            "Vulkan GPU Nativo (whisper.cpp)".to_string()
-        } else {
-            "CPU Nativo AVX2 Multihilo (whisper.cpp)".to_string()
-        },
+        backend_label,
         cpu_threads: threads,
         models_dir: dir.to_string_lossy().to_string(),
     })
@@ -246,19 +256,34 @@ pub async fn load_whisper_model(
     }
 
     let path_str = model_path.to_string_lossy().to_string();
-    let (loaded_ctx, used_gpu) = tokio::task::spawn_blocking(move || {
-        let mut gpu_params = WhisperContextParameters::default();
-        gpu_params.use_gpu(true);
+    let (loaded_ctx, used_gpu, detected_gpu_name) = tokio::task::spawn_blocking(move || {
+        let vk_devices = whisper_rs::vulkan::list_devices();
+        if let Some(primary_gpu) = vk_devices.first() {
+            let gpu_label = Some(primary_gpu.name.trim().to_string()).filter(|s| !s.is_empty());
 
-        if let Ok(ctx) = WhisperContext::new_with_params(&path_str, gpu_params) {
-            return Ok((ctx, true));
+            // 1. Try Vulkan GPU + Flash Attention for maximum throughput & lower VRAM
+            let mut gpu_fa_params = WhisperContextParameters::default();
+            gpu_fa_params.use_gpu(true);
+            gpu_fa_params.gpu_device(primary_gpu.id);
+            gpu_fa_params.flash_attn(true);
+            if let Ok(ctx) = WhisperContext::new_with_params(&path_str, gpu_fa_params) {
+                return Ok((ctx, true, gpu_label));
+            }
+
+            // 2. Retry Vulkan GPU without Flash Attention if driver lacks support
+            let mut gpu_params = WhisperContextParameters::default();
+            gpu_params.use_gpu(true);
+            gpu_params.gpu_device(primary_gpu.id);
+            if let Ok(ctx) = WhisperContext::new_with_params(&path_str, gpu_params) {
+                return Ok((ctx, true, gpu_label));
+            }
         }
 
-        // Automatic fallback to CPU if system lacks Vulkan drivers
+        // 3. Fallback to CPU AVX2 multithreaded execution
         let mut cpu_params = WhisperContextParameters::default();
         cpu_params.use_gpu(false);
         WhisperContext::new_with_params(&path_str, cpu_params)
-            .map(|ctx| (ctx, false))
+            .map(|ctx| (ctx, false, None))
             .map_err(|e| format!("No se pudo inicializar whisper.cpp con el modelo: {e}"))
     })
     .await
@@ -270,6 +295,9 @@ pub async fn load_whisper_model(
     }
     if let Ok(mut gpu_flag) = state.gpu_active.lock() {
         *gpu_flag = used_gpu;
+    }
+    if let Ok(mut name_guard) = state.gpu_name.lock() {
+        *name_guard = detected_gpu_name;
     }
 
     get_native_capabilities(app, state)
@@ -317,19 +345,24 @@ pub async fn transcribe_whisper_segment(
             .map_err(|e| format!("Error creando estado de inferencia: {e}"))?;
 
         let strategy = SamplingStrategy::BeamSearch {
-            beam_size: 5,
+            beam_size: 2,
             patience: -1.0,
         };
         let mut params = FullParams::new(strategy);
 
         let threads = std::thread::available_parallelism()
-            .map(|n| n.get().clamp(2, 8) as i32)
+            .map(|n| n.get().clamp(2, 12) as i32)
             .unwrap_or(4);
         params.set_n_threads(threads);
         params.set_language(Some(lang.as_str()));
         if !prompt.trim().is_empty() {
             params.set_initial_prompt(prompt.trim());
         }
+        params.set_no_timestamps(true);
+        params.set_temperature(0.0);
+        params.set_temperature_inc(0.0);
+        params.set_suppress_blank(true);
+        params.set_suppress_nst(true);
         params.set_print_special(false);
         params.set_print_progress(false);
         params.set_print_realtime(false);

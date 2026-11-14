@@ -14,10 +14,12 @@ import { RecordingView } from './components/RecordingView';
 import { SettingsView } from './components/SettingsView';
 import { Toast } from './components/Toast';
 import { TopBar } from './components/TopBar';
+import { shouldShowDownloadsTab } from './core/runtime/platform';
 import { useAppStore } from './store/useAppStore';
 
 export default function App() {
   const { currentView, setView, init, isRecording, transcribingSessionId } = useAppStore();
+  const showDownloads = shouldShowDownloadsTab();
 
   useEffect(() => {
     init();
@@ -46,17 +48,29 @@ export default function App() {
     };
   }, [isRecording, transcribingSessionId]);
 
+  const isDetailView = currentView === 'detail';
+
   return (
-    <div className="min-h-full flex flex-col bg-[#EDEFEA] text-slate-800 dark:bg-slate-950 dark:text-slate-100 transition-colors">
+    <div
+      className={`flex flex-col bg-[#EDEFEA] text-slate-800 dark:bg-slate-950 dark:text-slate-100 transition-colors ${
+        isDetailView
+          ? 'min-h-full lg:h-dvh lg:overflow-hidden print:h-auto print:overflow-visible'
+          : 'min-h-full'
+      }`}
+    >
       {/* Top Bar Header (suppressed during active recording to ensure zero distraction) */}
       {currentView !== 'recording' && <TopBar />}
 
       {/* Main Content Area */}
-      <main className="flex-1">
+      <main
+        className={`flex-1 ${
+          isDetailView ? 'lg:min-h-0 lg:overflow-hidden print:overflow-visible' : ''
+        }`}
+      >
         {currentView === 'home' && <HomeView />}
         {currentView === 'recording' && <RecordingView />}
         {currentView === 'detail' && <DetailView />}
-        {currentView === 'downloads' && <DownloadsView />}
+        {currentView === 'downloads' && (showDownloads ? <DownloadsView /> : <HomeView />)}
         {currentView === 'settings' && <SettingsView />}
         {currentView === 'privacy' && <PrivacyView />}
       </main>
