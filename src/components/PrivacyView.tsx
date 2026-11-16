@@ -106,7 +106,7 @@ export const PrivacyView: React.FC = () => {
               4. Cierre y evolución médica
             </h3>
             <p className="text-slate-500 dark:text-slate-400 leading-relaxed">
-              Al finalizar la atención, usá el botón <strong>«Copiar para IA»</strong> o exportá el texto para pegarlo directamente en el software de gestión o historia clínica digital de tu clínica. Podés conservar el audio local o eliminarlo para liberar espacio.
+              Al finalizar la atención, usá el botón <strong>«Copiar todo»</strong> o exportá el texto para pegarlo directamente en el software de gestión o historia clínica digital de tu clínica. Podés conservar el audio local o eliminarlo para liberar espacio.
             </p>
           </div>
         </div>

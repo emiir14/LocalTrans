@@ -11,6 +11,7 @@ import {
   UserPlus,
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
+import { NextPatientNameModal } from './NextPatientNameModal';
 
 export const RecordingView: React.FC = () => {
   const {
@@ -32,6 +33,7 @@ export const RecordingView: React.FC = () => {
     discardRecording,
     openConfirm,
     storageUsage,
+    pendingNextPatientModal,
   } = useAppStore();
 
   const [secondsSinceLastSave, setSecondsSinceLastSave] = useState(0);
@@ -156,7 +158,9 @@ export const RecordingView: React.FC = () => {
           </div>
           {isPaused && (
             <div className="text-xs font-semibold tracking-wide text-amber-700 dark:text-amber-300 mt-2">
-              Grabación en pausa
+              {pendingNextPatientModal
+                ? 'Esperando confirmación de paciente para comenzar...'
+                : 'Grabación en pausa'}
             </div>
           )}
         </div>
@@ -243,6 +247,8 @@ export const RecordingView: React.FC = () => {
           </button>
         </div>
       </div>
+
+      <NextPatientNameModal />
     </div>
   );
 };

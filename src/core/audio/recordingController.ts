@@ -343,20 +343,27 @@ export class RecordingController {
    * 1-Touch transition to the next patient without restarting the audio hardware,
    * keeping the microphone open and Screen Wake Lock active.
    */
-  public async switchNextPatient(newSession: Session): Promise<Session> {
+  public async switchNextPatient(
+    newSession: Session,
+    options: { startPaused?: boolean } = {}
+  ): Promise<Session> {
     if (!this.currentSession) {
       throw new Error('No hay sesión de grabación activa');
     }
 
     const previousSession = this.currentSession;
 
-    // If clinician pressed Next Patient while paused, resume hardware cleanly for the next patient
-    if (this.isPaused) {
-      this.resumeRecording();
-    }
-
     // Deterministically flush pending audio and wait for IndexedDB writes before switching session pointers
     await this.flushWorkletAndDrain();
+
+    if (options.startPaused) {
+      if (!this.isPaused) {
+        this.pauseRecording();
+      }
+    } else if (this.isPaused) {
+      // If clinician pressed Next Patient without deferring, resume hardware cleanly for the next patient
+      this.resumeRecording();
+    }
 
     const finalDuration = Math.max(1, Math.round(Math.max(this.durationSec, this.cumulativeAudioSec)));
     await this.sessionRepo.update(previousSession.id, {

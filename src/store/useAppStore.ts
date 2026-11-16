@@ -125,6 +125,8 @@ interface AppState {
   pauseRecording: () => void;
   resumeRecording: () => void;
   nextPatient: () => Promise<void>;
+  pendingNextPatientModal: { sessionId: string; patientIndex: number; timeStr: string } | null;
+  confirmNextPatientName: (customName?: string) => Promise<void>;
   stopRecording: () => Promise<void>;
   discardRecording: () => Promise<void>;
   recoverRecording: (session: Session) => Promise<void>;
@@ -210,6 +212,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   toastMessage: null,
   storageUsage: { usedBytes: 0, quotaBytes: 0 },
   confirmDialog: null,
+  pendingNextPatientModal: null,
 
   init: async () => {
     const ws = await authProvider.getCurrentWorkspace();
@@ -478,7 +481,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   nextPatient: async () => {
     const controller = get().recordingController;
     const ws = get().workspace;
-    if (!controller || !ws) return;
+    if (!controller || !ws || get().pendingNextPatientModal) return;
 
     backgroundChunkTranscriber.resetSessionContext();
     const nextIndex = get().dayPatientIndex + 1;
@@ -500,7 +503,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     };
 
     try {
-      await controller.switchNextPatient(newSession);
+      await controller.switchNextPatient(newSession, { startPaused: true });
 
       if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
         try {
@@ -512,7 +515,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
       set({
         dayPatientIndex: nextIndex,
-        isPaused: false,
+        isPaused: true,
         isQuickDictationMode: false,
         appendingToSessionId: null,
         activeSession: newSession,
@@ -520,15 +523,42 @@ export const useAppStore = create<AppState>((set, get) => ({
         recordingDurationSec: 0,
         lastSavedAt: Date.now(),
         silenceWarning: false,
+        pendingNextPatientModal: { sessionId, patientIndex: nextIndex, timeStr },
       });
 
       await get().loadSessions();
-      get().showToast(`¡Consulta anterior guardada! Iniciando Paciente #${nextIndex}`, 'success');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al cambiar de paciente';
       console.error('Error switching to next patient:', err);
       get().showToast(msg, 'warning');
     }
+  },
+
+  confirmNextPatientName: async (customName?: string) => {
+    const pending = get().pendingNextPatientModal;
+    if (!pending) return;
+
+    set({ pendingNextPatientModal: null });
+
+    const trimmed = customName?.trim() || '';
+    if (trimmed) {
+      const patch = {
+        reference: trimmed,
+        title: `Consulta ${trimmed} (${pending.timeStr} hs)`,
+      };
+      await sessionRepo.update(pending.sessionId, patch);
+      const currentActive = get().activeSession;
+      if (currentActive && currentActive.id === pending.sessionId) {
+        set({ activeSession: { ...currentActive, ...patch } });
+      }
+      await get().loadSessions();
+    }
+
+    get().resumeRecording();
+    get().showToast(
+      `¡Consulta anterior guardada! Grabando ${trimmed || `Paciente #${pending.patientIndex}`}`,
+      'success'
+    );
   },
 
   stopRecording: async () => {
@@ -545,6 +575,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         appendingToSessionId: null,
         trackDisconnectedWarning: null,
         recordingController: null,
+        pendingNextPatientModal: null,
       });
 
       await get().loadSessions();
@@ -573,6 +604,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           appendingToSessionId: null,
           trackDisconnectedWarning: null,
           recordingController: null,
+          pendingNextPatientModal: null,
         });
         get().setView('detail', appendingId);
         get().showToast('Anexo detenido', 'info');
@@ -588,6 +620,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         trackDisconnectedWarning: null,
         recordingController: null,
         activeSession: null,
+        pendingNextPatientModal: null,
       });
       get().setView('home');
       get().showToast('Grabación descartada', 'info');

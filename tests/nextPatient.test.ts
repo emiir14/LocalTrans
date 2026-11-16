@@ -75,4 +75,70 @@ describe('1-Touch Next Patient Transition', () => {
     expect(stored2?.durationSec).toBe(0);
     expect(stored2?.title).toBe('Consulta Paciente #2');
   });
+
+  it('keeps recording paused on switchNextPatient({ startPaused: true }) until resumed', async () => {
+    const { RecordingController } = await import('../src/core/audio/recordingController');
+    const repo = new MockSessionRepository();
+    const postedCommands: string[] = [];
+
+    const mockAudioStore: any = {
+      addChunk: async () => {},
+      getChunks: async () => [],
+    };
+
+    const controller = new RecordingController(repo, mockAudioStore);
+    const s1: Session = {
+      id: 'sess_1',
+      workspaceId: 'ws_test',
+      title: 'Consulta #1',
+      reference: 'Paciente #1',
+      status: 'recording',
+      durationSec: 45,
+      consentGiven: true,
+      audioDeleted: false,
+      createdAt: 1000,
+      updatedAt: 1000,
+    };
+    await repo.create(s1);
+
+    // Attach lightweight internal state to simulate active worklet capture without browser hardware
+    (controller as any).currentSession = s1;
+    (controller as any).isRecording = true;
+    (controller as any).isPaused = false;
+    (controller as any).durationSec = 45;
+    (controller as any).workletNode = {
+      port: {
+        postMessage: (msg: any) => {
+          if (msg.command) postedCommands.push(msg.command);
+          if (msg.command === 'flush') {
+            const resolver = (controller as any).pendingFlushResolvers.get(msg.flushId);
+            resolver?.();
+          }
+        },
+      },
+    };
+
+    const s2: Session = {
+      id: 'sess_2',
+      workspaceId: 'ws_test',
+      title: 'Consulta #2',
+      reference: 'Paciente #2',
+      status: 'recording',
+      durationSec: 0,
+      consentGiven: true,
+      audioDeleted: false,
+      createdAt: 2000,
+      updatedAt: 2000,
+    };
+
+    const prev = await controller.switchNextPatient(s2, { startPaused: true });
+    expect(prev.status).toBe('recorded');
+    expect((controller as any).isPaused).toBe(true);
+    expect(postedCommands).toEqual(['flush', 'pause']);
+
+    // Resuming after popup closes starts capturing Patient #2
+    controller.resumeRecording();
+    expect((controller as any).isPaused).toBe(false);
+    expect(postedCommands).toEqual(['flush', 'pause', 'resume']);
+  });
 });

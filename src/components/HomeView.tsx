@@ -117,7 +117,7 @@ export const HomeView: React.FC = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="grid grid-cols-3 items-stretch gap-2 w-full md:w-auto sm:flex sm:flex-wrap sm:items-center sm:gap-2.5">
           <input
             type="file"
             ref={fileInputRef}
@@ -127,18 +127,18 @@ export const HomeView: React.FC = () => {
           />
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-2 px-4 py-3 rounded-2xl text-xs font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors shadow-xs whitespace-nowrap min-h-[48px]"
+            className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 py-2.5 sm:px-4 sm:py-3 rounded-2xl text-[11px] leading-tight sm:text-xs font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors shadow-xs text-center sm:whitespace-nowrap h-full min-h-[56px] sm:min-h-0 sm:h-12"
           >
-            <Upload className="w-4 h-4 text-slate-500" />
+            <Upload className="w-4 h-4 text-slate-500 shrink-0" />
             <span>Importar audio</span>
           </button>
 
           <button
             onClick={() => startRecording('', true, { isQuickDictation: true })}
-            className="flex items-center gap-2 px-4 py-3 rounded-2xl text-xs font-semibold text-teal-800 dark:text-teal-200 bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800/80 hover:bg-teal-100 dark:hover:bg-teal-900/40 transition-colors whitespace-nowrap min-h-[48px]"
+            className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 py-2.5 sm:px-4 sm:py-3 rounded-2xl text-[11px] leading-tight sm:text-xs font-semibold text-teal-800 dark:text-teal-200 bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800/80 hover:bg-teal-100 dark:hover:bg-teal-900/40 transition-colors text-center sm:whitespace-nowrap h-full min-h-[56px] sm:min-h-0 sm:h-12"
             title="Graba un dictado breve post-atención sin pasos previos y transcribe al detener"
           >
-            <Zap className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+            <Zap className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
             <span>Dictado rápido</span>
           </button>
 
@@ -150,9 +150,9 @@ export const HomeView: React.FC = () => {
                 startRecording();
               }
             }}
-            className="group relative flex items-center gap-2.5 px-6 py-3 rounded-2xl text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 active:scale-[0.98] transition-all shadow-md shadow-teal-600/20 whitespace-nowrap min-h-[48px]"
+            className="group relative flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2.5 px-2 py-2.5 sm:px-6 sm:py-3 rounded-2xl text-[11px] leading-tight sm:text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 active:scale-[0.98] transition-all shadow-md shadow-teal-600/20 text-center sm:whitespace-nowrap h-full min-h-[56px] sm:min-h-0 sm:h-12"
           >
-            <Mic className="w-4 h-4" />
+            <Mic className="w-4 h-4 shrink-0" />
             <span>Grabar consulta</span>
           </button>
         </div>

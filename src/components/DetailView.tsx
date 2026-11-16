@@ -257,14 +257,6 @@ export const DetailView: React.FC = () => {
     setTimeout(() => setCopiedType(null), 2500);
   };
 
-  const handleCopyForAi = () => {
-    const aiText = ExportFormatter.toAiContext(activeSession, activeTranscript);
-    navigator.clipboard.writeText(aiText);
-    setCopiedType('ai');
-    showToast('Texto clínico formateado para IA copiado', 'success');
-    setTimeout(() => setCopiedType(null), 2500);
-  };
-
   const handleDownload = (format: 'txt' | 'md' | 'srt' | 'json') => {
     let content = '';
     const ext = format;
@@ -540,15 +532,6 @@ export const DetailView: React.FC = () => {
               >
                 <Download className="w-3.5 h-3.5 text-slate-500" />
                 <span>Descargar .txt</span>
-              </button>
-
-              <button
-                onClick={handleCopyForAi}
-                className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-200 border border-teal-200 dark:border-teal-800/80 hover:bg-teal-100 dark:hover:bg-teal-900/40 transition-colors whitespace-nowrap min-h-[44px]"
-                title="Copia el texto limpio con encabezado clínico estructurado para enviar a tu IA"
-              >
-                {copiedType === 'ai' ? <Check className="w-3.5 h-3.5 text-teal-600" /> : <Sparkles className="w-3.5 h-3.5 text-teal-600" />}
-                <span>Copiar para IA</span>
               </button>
 
               <div className="relative">
