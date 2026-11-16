@@ -189,4 +189,201 @@ describe('Clinical FDI Parser & Structured Note Builder', () => {
 
     expect([p1, p2, p3, p4, p5, p6]).toEqual([4, 4, 4, 4, 52, 100]);
   });
+
+  it('shares load progress across concurrent callers and falls back to WASM when WebGPU stalls', async () => {
+    const { WhisperTranscriptionEngine } = await import('../src/core/transcription/engine');
+
+    const origDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: {
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        platform: 'Win32',
+        maxTouchPoints: 0,
+        hardwareConcurrency: 8,
+        gpu: {
+          requestAdapter: async () => ({ info: { vendor: 'mock', architecture: 'mock' } }),
+        },
+      },
+    });
+
+    const spawnedBackends: string[] = [];
+    const terminatedCount = { value: 0 };
+    const fallbackNotices: string[] = [];
+
+    try {
+      const engine = new WhisperTranscriptionEngine({
+        webGpuInitStallTimeoutMs: 40,
+        wasmInitStallTimeoutMs: 200,
+        segmentTimeoutMs: 50,
+        onCorruptionFallback: (reason) => fallbackNotices.push(reason),
+        workerFactory: () => {
+          const fakeWorker: any = {
+            onmessage: null,
+            onerror: null,
+            terminate: () => {
+              terminatedCount.value++;
+            },
+            postMessage: (msg: any) => {
+              if (msg.type === 'init') {
+                spawnedBackends.push(msg.payload.device);
+                if (msg.payload.device === 'webgpu') {
+                  // Simulate progress at 45% then WebGPU shader stall (never sends init_done)
+                  setTimeout(() => {
+                    fakeWorker.onmessage?.({
+                      data: { type: 'load_progress', payload: { status: 'progress', progress: 45, loaded: 45, total: 100 } },
+                    });
+                  }, 5);
+                } else {
+                  // WASM completes promptly
+                  setTimeout(() => {
+                    fakeWorker.onmessage?.({
+                      data: { type: 'load_progress', payload: { status: 'progress', progress: 100, loaded: 100, total: 100 } },
+                    });
+                    fakeWorker.onmessage?.({
+                      data: { type: 'init_done', payload: { device: 'wasm', dtype: 'q8' } },
+                    });
+                  }, 10);
+                }
+              }
+            },
+          };
+          return fakeWorker as Worker;
+        },
+      });
+
+      const caller1Progress: number[] = [];
+      const caller2Progress: number[] = [];
+
+      const p1 = engine.load('balanced', (d) => {
+        if (typeof d.progress === 'number') caller1Progress.push(d.progress);
+      });
+      await new Promise((r) => setTimeout(r, 15));
+      const p2 = engine.load('balanced', (d) => {
+        if (typeof d.progress === 'number') caller2Progress.push(d.progress);
+      });
+
+      await Promise.all([p1, p2]);
+
+      expect(spawnedBackends).toEqual(['webgpu', 'wasm']);
+      expect(terminatedCount.value).toBe(1);
+      expect(engine.getActiveBackend()).toBe('wasm');
+      expect(fallbackNotices.length).toBe(1);
+      expect(caller1Progress).toContain(45);
+      expect(caller2Progress).toContain(45);
+      expect(caller2Progress).toContain(100);
+    } finally {
+      if (origDescriptor) {
+        Object.defineProperty(globalThis, 'navigator', origDescriptor);
+      }
+    }
+  });
+
+  it('recovers cleanly via abortLoad and bounds BackgroundChunkTranscriber waitForIdle', async () => {
+    const { WhisperTranscriptionEngine } = await import('../src/core/transcription/engine');
+    const { BackgroundChunkTranscriber } = await import('../src/core/transcription/backgroundQueue');
+
+    let workerIdx = 0;
+    const engine = new WhisperTranscriptionEngine({
+      wasmInitStallTimeoutMs: 5000,
+      workerFactory: () => {
+        const idx = workerIdx++;
+        const fakeWorker: any = {
+          onmessage: null,
+          onerror: null,
+          terminate: () => {},
+          postMessage: (msg: any) => {
+            if (msg.type === 'init' && idx === 1) {
+              setTimeout(() => {
+                fakeWorker.onmessage?.({ data: { type: 'init_done', payload: { device: 'wasm' } } });
+              }, 10);
+            }
+          },
+        };
+        return fakeWorker as Worker;
+      },
+    });
+
+    // First load hangs; abortLoad unblocks queue so second load succeeds
+    const firstLoad = engine.load('balanced').catch((e) => e.message);
+    await new Promise((r) => setTimeout(r, 10));
+    expect(engine.isLoadInProgress()).toBe(true);
+    engine.abortLoad();
+    const firstResult = await firstLoad;
+    expect(String(firstResult)).toContain('cancelada');
+
+    await engine.load('balanced');
+    expect(engine.isReady()).toBe(true);
+
+    // BackgroundChunkTranscriber: skips uncached silent downloads and enforces bounded waitForIdle
+    let slowEngineCalled = false;
+    const bg = new BackgroundChunkTranscriber({
+      getEngine: () =>
+        ({
+          isReady: () => true,
+          transcribe: () =>
+            new Promise((resolve) => {
+              slowEngineCalled = true;
+              setTimeout(() => resolve({ text: 'ok', chunks: [] }), 500);
+            }),
+          load: async () => {},
+          dispose: async () => {},
+          getActiveTier: () => 'balanced',
+          getBackend: () => 'wasm',
+          getActiveBackend: () => 'wasm',
+        }),
+      getSettings: () => ({ modelTier: 'balanced', transcriptionMode: 'dental' }),
+      getCurrentSessionId: () => 's2',
+      transcriptRepo: { addSegment: async () => {} },
+      glossaryRepo: { getAll: async () => [] },
+      isModelCached: async () => false,
+    });
+
+    // Realistic voiced sine wave (400 Hz) so VAD produces a speech segment
+    const int16 = new Int16Array(16000);
+    for (let i = 0; i < int16.length; i++) {
+      int16[i] = Math.round(Math.sin((2 * Math.PI * 400 * i) / 16000) * 12000);
+    }
+    const pcm = int16.buffer;
+
+    bg.enqueue(
+      {
+        id: 'c1',
+        sessionId: 's1',
+        chunkIndex: 0,
+        startTime: 0,
+        endTime: 1,
+        pcmData: pcm,
+        samples: 16000,
+        sampleRate: 16000,
+        createdAt: Date.now(),
+      },
+      's1',
+      'ws1'
+    );
+    bg.enqueue(
+      {
+        id: 'c2',
+        sessionId: 's1',
+        chunkIndex: 1,
+        startTime: 1,
+        endTime: 2,
+        pcmData: pcm,
+        samples: 16000,
+        sampleRate: 16000,
+        createdAt: Date.now(),
+      },
+      's1',
+      'ws1'
+    );
+
+    // Give processQueue microtasks a moment to acquire wakelock and enter slow engine.transcribe
+    await new Promise((r) => setTimeout(r, 15));
+
+    bg.clearAllPending();
+    const drained = await bg.waitForIdle({ maxWaitMs: 40 });
+    expect(slowEngineCalled).toBe(true);
+    expect(drained).toBe(false);
+  });
 });
+

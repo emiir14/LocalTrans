@@ -14,12 +14,15 @@ import {
   importGlossaryJson,
   restoreFullBackup,
 } from '../core/export/backup';
-import { getSharedWhisperEngine, ProgressCallbackData } from '../core/transcription/engine';
+import {
+  getSharedWhisperEngine,
+  ProgressCallbackData,
+  WhisperTranscriptionEngine,
+} from '../core/transcription/engine';
+import { BackgroundChunkTranscriber } from '../core/transcription/backgroundQueue';
 import { checkModelCacheStatus, ModelCacheStatus } from '../core/transcription/modelCache';
 import { PipelineProgress, TranscriptionPipeline } from '../core/transcription/pipeline';
-import { buildSegmentPrompt } from '../core/transcription/prompts';
 import { getDefaultModelTier, shouldShowDownloadsTab } from '../core/runtime/platform';
-import { ClinicalAudioSegmenter } from '../core/transcription/vad';
 import {
   AppSettings,
   AudioChunk,
@@ -42,135 +45,27 @@ export const glossaryRepo = new LocalGlossaryRepository();
 export const settingsRepo = new LocalSettingsRepository();
 export const authProvider = new LocalAuthProvider();
 
-/**
- * Progressive background pre-transcriber that processes audio chunks during recording
- */
-class BackgroundChunkTranscriber {
-  private queue: Array<{ chunk: AudioChunk; sessionId: string; workspaceId: string }> = [];
-  private isProcessing = false;
-  private segmenter = new ClinicalAudioSegmenter();
-  private lastTranscribedText = '';
-  private lastSessionId = '';
-  private idleWaiters: Array<() => void> = [];
-
-  public enqueue(chunk: AudioChunk, sessionId: string, workspaceId: string) {
-    if (this.lastSessionId !== sessionId) {
-      this.lastSessionId = sessionId;
-      this.lastTranscribedText = '';
+export const backgroundChunkTranscriber = new BackgroundChunkTranscriber({
+  getEngine: () => getSharedWhisperEngine(),
+  getSettings: () => useAppStore.getState().settings,
+  getCurrentSessionId: () => useAppStore.getState().currentSessionId,
+  transcriptRepo,
+  glossaryRepo,
+  isModelCached: async (tier) => {
+    const resolvedKey = tier === 'max' ? 'max' : 'balanced';
+    const cachedInStore = useAppStore.getState().modelCacheStatuses[resolvedKey];
+    if (cachedInStore) return cachedInStore.isCached;
+    const status = await checkModelCacheStatus(resolvedKey);
+    return status.isCached;
+  },
+  onSegmentAdded: (sessionId, segment) => {
+    if (useAppStore.getState().currentSessionId === sessionId) {
+      useAppStore.setState((state) => ({
+        activeTranscript: [...state.activeTranscript, segment].sort((a, b) => a.start - b.start),
+      }));
     }
-    this.queue.push({ chunk, sessionId, workspaceId });
-    this.processQueue();
-  }
-
-  public resetSessionContext() {
-    this.lastTranscribedText = '';
-    this.lastSessionId = '';
-  }
-
-  public clearQueueForSession(sessionId: string) {
-    this.queue = this.queue.filter((item) => item.sessionId !== sessionId);
-  }
-
-  public async waitForIdle(): Promise<void> {
-    if (!this.isProcessing && this.queue.length === 0) return;
-    return new Promise((resolve) => {
-      this.idleWaiters.push(resolve);
-    });
-  }
-
-  private notifyIdleIfDone() {
-    if (!this.isProcessing && this.queue.length === 0) {
-      const waiters = this.idleWaiters.splice(0, this.idleWaiters.length);
-      waiters.forEach((w) => w());
-    }
-  }
-
-  private async processQueue() {
-    if (this.isProcessing || this.queue.length === 0) {
-      this.notifyIdleIfDone();
-      return;
-    }
-    this.isProcessing = true;
-    await wakeLockManager.acquire('bg_transcription');
-
-    try {
-      const item = this.queue.shift();
-      if (!item) return;
-
-      const { chunk, sessionId, workspaceId } = item;
-      const engine = getSharedWhisperEngine();
-      if (!engine.isReady()) {
-        const currentSettings = useAppStore.getState().settings;
-        await engine.load(currentSettings?.modelTier || getDefaultModelTier());
-      }
-
-      const int16 = new Int16Array(chunk.pcmData);
-      const float32 = new Float32Array(int16.length);
-      for (let i = 0; i < int16.length; i++) {
-        const s = int16[i];
-        float32[i] = s < 0 ? s / 0x8000 : s / 0x7fff;
-      }
-
-      const speechSegments = this.segmenter.segmentAudio(float32);
-      if (speechSegments.length === 0) return;
-
-      const mode: TranscriptionMode = useAppStore.getState().settings?.transcriptionMode || 'dental';
-      const glossaryEntries = mode === 'dental' ? await glossaryRepo.getAll(workspaceId) : [];
-
-      for (let i = 0; i < speechSegments.length; i++) {
-        const seg = speechSegments[i];
-        const segStart = chunk.startTime + seg.startSec;
-        const segEnd = chunk.startTime + seg.endSec;
-        const initialPrompt = buildSegmentPrompt(mode, this.lastTranscribedText);
-
-        const res = await engine.transcribe(seg.samples, {
-          language: 'es',
-          initialPrompt,
-          segmentIndex: chunk.chunkIndex * 10 + i,
-          startSec: segStart,
-          endSec: segEnd,
-        });
-
-        const rawText = res.text?.trim() || '';
-        if (rawText && !isHallucination(rawText) && !isConsecutiveDuplicate(rawText, this.lastTranscribedText)) {
-          const processedText = mode === 'dental' ? applyGlossary(rawText, glossaryEntries) : rawText;
-          const segment: TranscriptSegment = {
-            id: `seg_${sessionId}_bg_${Date.now()}_${chunk.chunkIndex}_${i}`,
-            sessionId,
-            start: segStart,
-            end: segEnd,
-            text: processedText,
-            originalText: rawText,
-            edited: false,
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-          };
-
-          await transcriptRepo.addSegment(segment);
-          this.lastTranscribedText = processedText;
-
-          if (useAppStore.getState().currentSessionId === sessionId) {
-            useAppStore.setState((state) => ({
-              activeTranscript: [...state.activeTranscript, segment].sort((a, b) => a.start - b.start),
-            }));
-          }
-        }
-      }
-    } catch (err) {
-      console.warn('[BackgroundChunkTranscriber] Non-blocking notice:', err);
-    } finally {
-      this.isProcessing = false;
-      if (this.queue.length > 0) {
-        this.processQueue();
-      } else {
-        await wakeLockManager.release('bg_transcription');
-        this.notifyIdleIfDone();
-      }
-    }
-  }
-}
-
-export const backgroundChunkTranscriber = new BackgroundChunkTranscriber();
+  },
+});
 
 export type AppView = 'home' | 'recording' | 'detail' | 'downloads' | 'settings' | 'privacy';
 
@@ -355,7 +250,14 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     if (typeof window !== 'undefined') {
       setTimeout(() => {
-        getSharedWhisperEngine().load(sets.modelTier || getDefaultModelTier()).catch(() => {});
+        const activeTier = sets.modelTier || getDefaultModelTier();
+        const resolvedKey = activeTier === 'max' ? 'max' : 'balanced';
+        const isAlreadyCached = get().modelCacheStatuses[resolvedKey]?.isCached;
+        // Only warm up cached models silently on startup so uncached 240-480 MB downloads
+        // never lock the engine queue without visible progress.
+        if (isAlreadyCached) {
+          getSharedWhisperEngine().load(activeTier).catch(() => {});
+        }
       }, 1500);
     }
   },
@@ -718,8 +620,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       return;
     }
 
-    // Drain any queued/in-flight background chunk for this session before starting pipeline
-    backgroundChunkTranscriber.clearQueueForSession(sessionId);
+    // Prioritize foreground transcription: clear pending background queue items across sessions
+    backgroundChunkTranscriber.clearAllPending();
 
     const pipeline = new TranscriptionPipeline(
       sessionRepo,
@@ -730,7 +632,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       {
         onCorruptionFallback: (reason) => {
           set({
-            transcriptionFallbackNotice: `WebGPU generó salida inestable (${reason}). Se cambió automáticamente a WASM para garantizar fidelidad.`,
+            transcriptionFallbackNotice: `WebGPU generó salida o latencia inestable (${reason}). Se cambió automáticamente a WASM para garantizar fidelidad.`,
           });
         },
       }
@@ -752,7 +654,14 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     await wakeLockManager.acquire('transcription');
     try {
-      await backgroundChunkTranscriber.waitForIdle();
+      await backgroundChunkTranscriber.waitForIdle({
+        maxWaitMs: 3500,
+        shouldAbort: () => get().transcriptionPipeline !== pipeline,
+      });
+
+      if (get().transcriptionPipeline !== pipeline) {
+        return;
+      }
 
       const segments = await pipeline.run(
         sessionId,
@@ -807,14 +716,24 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   cancelTranscription: () => {
     const pipeline = get().transcriptionPipeline;
+    const sessionId = get().transcribingSessionId;
+    backgroundChunkTranscriber.clearAllPending();
+
     if (pipeline) {
       pipeline.cancel();
+      const engine = getSharedWhisperEngine();
+      if (engine instanceof WhisperTranscriptionEngine && engine.isLoadInProgress()) {
+        engine.abortLoad();
+      }
       wakeLockManager.release('transcription').catch(() => {});
       set({
         transcribingSessionId: null,
         transcriptionProgress: null,
         transcriptionPipeline: null,
       });
+      if (sessionId) {
+        sessionRepo.update(sessionId, { status: 'recorded' }).catch(() => {});
+      }
       get().showToast('Transcripción detenida', 'info');
     }
   },

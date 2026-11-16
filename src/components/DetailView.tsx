@@ -799,7 +799,11 @@ export const DetailView: React.FC = () => {
                     </div>
 
                     <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
-                      <span>Analizando fragmento de voz...</span>
+                      <span>
+                        {transcriptionProgress?.isDownloadingModel
+                          ? 'Descargando o preparando modelo...'
+                          : 'Analizando fragmento de voz...'}
+                      </span>
                       <span>Restan: {formatRemainingTime(transcriptionProgress?.estimatedRemainingSec || 0)}</span>
                     </div>
                   </div>

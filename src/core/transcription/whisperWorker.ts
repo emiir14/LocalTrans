@@ -5,11 +5,15 @@ import { MonotonicModelProgressTracker } from './progressTracker';
 env.allowLocalModels = false;
 env.useBrowserCache = true;
 
-// Maximize WASM CPU performance using available hardware threads
+// Maximize WASM CPU performance only when SharedArrayBuffer / crossOriginIsolated is available
 if (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) {
   try {
+    const canUseThreads =
+      typeof SharedArrayBuffer !== 'undefined' && Boolean((self as any).crossOriginIsolated);
     if ((env as any).backends?.onnx?.wasm) {
-      (env as any).backends.onnx.wasm.numThreads = Math.min(8, navigator.hardwareConcurrency);
+      (env as any).backends.onnx.wasm.numThreads = canUseThreads
+        ? Math.min(4, navigator.hardwareConcurrency)
+        : 1;
     }
   } catch {
     // Ignore if not supported in worker environment
@@ -25,6 +29,37 @@ const isMobileWorker =
   typeof navigator !== 'undefined' &&
   /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
+async function resolveSafeWebGpuDtype(requestedDtype: any): Promise<{ dtype: any; hasAdapter: boolean }> {
+  if (!(navigator as any).gpu) {
+    return { dtype: requestedDtype, hasAdapter: false };
+  }
+  try {
+    const adapter = await (navigator as any).gpu.requestAdapter();
+    if (!adapter) {
+      return { dtype: requestedDtype, hasAdapter: false };
+    }
+    const supportsFp16 = Boolean(adapter.features?.has?.('shader-f16'));
+    if (!supportsFp16 && requestedDtype && typeof requestedDtype === 'object') {
+      const normalized: Record<string, string> = {};
+      for (const [k, v] of Object.entries(requestedDtype)) {
+        normalized[k] = v === 'fp16' ? 'fp32' : String(v);
+      }
+      return { dtype: normalized, hasAdapter: true };
+    }
+    if (!supportsFp16 && requestedDtype === 'fp16') {
+      return { dtype: 'fp32', hasAdapter: true };
+    }
+    return { dtype: requestedDtype, hasAdapter: true };
+  } catch {
+    return { dtype: requestedDtype, hasAdapter: false };
+  }
+}
+
+function resolveWasmFallbackDtype(requestedDtype: any): 'q8' | 'q4' {
+  if (requestedDtype === 'q4') return 'q4';
+  return 'q8';
+}
+
 async function loadPipelineWithFallback(
   modelId: string,
   requestedDevice: 'webgpu' | 'wasm',
@@ -32,13 +67,21 @@ async function loadPipelineWithFallback(
   onProgress?: (p: any) => void
 ): Promise<{ instance: any; device: 'webgpu' | 'wasm'; dtype: any; fallbackFromWebGpu: boolean }> {
   let activeDevice = requestedDevice;
+  let effectiveDtype = requestedDtype || 'q8';
   let fallbackFromWebGpu = false;
 
   if (isMobileWorker && activeDevice === 'webgpu') {
     activeDevice = 'wasm';
   }
-  if (activeDevice === 'webgpu' && !(navigator as any).gpu) {
-    activeDevice = 'wasm';
+  if (activeDevice === 'webgpu') {
+    const gpuCheck = await resolveSafeWebGpuDtype(effectiveDtype);
+    if (!gpuCheck.hasAdapter) {
+      activeDevice = 'wasm';
+      fallbackFromWebGpu = true;
+      effectiveDtype = resolveWasmFallbackDtype(requestedDtype);
+    } else {
+      effectiveDtype = gpuCheck.dtype;
+    }
   }
 
   const progress_callback = onProgress
@@ -48,13 +91,13 @@ async function loadPipelineWithFallback(
   try {
     const instance = await pipeline('automatic-speech-recognition', modelId, {
       device: activeDevice,
-      dtype: requestedDtype || 'q4',
+      dtype: effectiveDtype,
       ...(progress_callback ? { progress_callback } : {}),
     });
-    return { instance, device: activeDevice, dtype: requestedDtype || 'q4', fallbackFromWebGpu };
+    return { instance, device: activeDevice, dtype: effectiveDtype, fallbackFromWebGpu };
   } catch (firstErr) {
-    // If higher quantization (e.g. q8) failed on requested device, retry same device with q4 before falling back
-    if (requestedDtype && requestedDtype !== 'q4') {
+    // If higher quantization failed on requested device, retry same device with q4 before falling back
+    if (effectiveDtype && effectiveDtype !== 'q4') {
       try {
         console.warn('[WhisperWorker] Retrying with q4 quantization after init error:', firstErr);
         const instance = await pipeline('automatic-speech-recognition', modelId, {
@@ -71,12 +114,13 @@ async function loadPipelineWithFallback(
     if (activeDevice === 'webgpu') {
       console.warn('[WhisperWorker] WebGPU init failed, retrying on WASM:', firstErr);
       fallbackFromWebGpu = true;
+      const wasmDtype = resolveWasmFallbackDtype(requestedDtype);
       const instance = await pipeline('automatic-speech-recognition', modelId, {
         device: 'wasm',
-        dtype: 'q4',
+        dtype: wasmDtype,
         ...(progress_callback ? { progress_callback } : {}),
       });
-      return { instance, device: 'wasm', dtype: 'q4', fallbackFromWebGpu };
+      return { instance, device: 'wasm', dtype: wasmDtype, fallbackFromWebGpu };
     }
 
     throw firstErr;
@@ -294,10 +338,11 @@ self.onmessage = async (event: MessageEvent) => {
         } catch (inferenceErr: any) {
           if (currentDevice === 'webgpu') {
             console.warn('[WhisperWorker] WebGPU inference failed, dynamically falling back to WASM:', inferenceErr);
-            const fallbackLoaded = await loadPipelineWithFallback(currentModelId, 'wasm', 'q4');
+            const wasmDtype = resolveWasmFallbackDtype(currentDtype);
+            const fallbackLoaded = await loadPipelineWithFallback(currentModelId, 'wasm', wasmDtype);
             transcriber = fallbackLoaded.instance;
             currentDevice = 'wasm';
-            currentDtype = 'q4';
+            currentDtype = fallbackLoaded.dtype;
             text = await runWhisperInference(transcriber, floatAudio, language, initialPrompt);
           } else {
             throw inferenceErr;
